@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stand By Me · folioscopio 2 · Así crece el grupo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --desk:#22211e; --paper:#f3ecdc; --ink:#1d2a3a; --cream:#efe7d6; --muted:#a59c88; --sun:#e2a93b;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--desk); color:var(--cream);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    min-height:100svh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:16px; padding:20px 16px 26px; overscroll-behavior:none;
+    background-image:radial-gradient(120% 80% at 50% 40%, #2e2c27 0%, #22211e 60%, #191815 100%);
+  }
+  header{text-align:center; line-height:1.15}
+  header .t{font-family:Caveat,cursive; font-size:30px; font-weight:700; letter-spacing:.3px}
+  header .s{font-size:12.5px; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-top:4px}
+  .book{
+    position:relative; width:min(94vw,600px); aspect-ratio:480/340;
+    touch-action:none; cursor:grab; user-select:none; -webkit-user-select:none;
+    margin:4px 0 20px;
+  }
+  .book:active{cursor:grabbing}
+  canvas{
+    position:absolute; inset:0; width:100%; height:100%; display:block;
+    border-radius:2px 7px 7px 2px;
+    box-shadow:
+      1.5px 1.5px 0 #e9e0cb, 3px 3px 0 #dfd5be, 4.5px 4.5px 0 #d6cbb2,
+      6px 6px 0 #ccc0a6, 7.5px 7.5px 0 #c2b69b, 9px 9px 0 #b8ab90,
+      16px 22px 34px rgba(0,0,0,.55);
+  }
+  .bind{
+    position:absolute; left:0; top:0; bottom:0; width:6.5%;
+    background:linear-gradient(90deg, rgba(29,42,58,.30), rgba(29,42,58,.10) 55%, rgba(29,42,58,0));
+    border-radius:2px 0 0 2px; pointer-events:none;
+  }
+  .bind i{position:absolute; left:28%; width:9%; min-width:3px; height:9%; background:#8d8a84; border-radius:2px; box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+  .bind i:first-child{top:16%} .bind i:last-child{bottom:16%}
+  .sheen{
+    position:absolute; inset:0; pointer-events:none; opacity:0; border-radius:2px 7px 7px 2px;
+    background:linear-gradient(100deg, rgba(255,255,255,0) 40%, rgba(255,255,255,.55) 62%, rgba(29,42,58,.16) 78%, rgba(255,255,255,0) 100%);
+  }
+  .sheen.go{animation:flip .11s ease-out}
+  @keyframes flip{0%{opacity:.9; transform:translateX(14%)}100%{opacity:0; transform:translateX(-30%)}}
+  .thumb{
+    position:absolute; right:-8%; bottom:-21%; width:19%; pointer-events:none;
+    transform-origin:60% 100%; transform:rotate(-16deg); transition:transform .09s ease-out;
+    filter:drop-shadow(3px 5px 6px rgba(0,0,0,.45));
+  }
+  .thumb.tick{transform:rotate(-23deg) translateY(-2%)}
+  .meta{width:min(94vw,600px); display:flex; align-items:baseline; justify-content:space-between; gap:12px}
+  .scene{font-family:Caveat,cursive; font-size:25px; font-weight:700}
+  .count{font-size:12.5px; color:var(--muted); font-variant-numeric:tabular-nums}
+  input[type=range]{width:min(94vw,600px); accent-color:var(--sun); height:28px; margin:0}
+  .row{display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
+  button{
+    font:inherit; font-size:15px; font-weight:600; color:var(--desk); background:var(--sun);
+    border:0; border-radius:999px; padding:11px 20px; cursor:pointer;
+  }
+  button.ghost{background:transparent; color:var(--cream); box-shadow:inset 0 0 0 1.5px rgba(239,231,214,.45)}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--cream); outline-offset:3px}
+  .hint{max-width:min(92vw,520px); text-align:center; font-size:13.5px; line-height:1.45; color:var(--muted); margin:0}
+  @media (prefers-reduced-motion: reduce){ .sheen.go{animation:none} .thumb{transition:none} }
+</style>
+</head>
+<body>
+  <header>
+    <div class="t">Así crece el grupo</div>
+    <div class="s">Stand By Me · folioscopio 2 · prototipo</div>
+  </header>
+
+  <div class="book" id="book" aria-label="Folioscopio. Arrastra para pasar las hojas.">
+    <canvas id="c" width="960" height="680"></canvas>
+    <div class="bind"><i></i><i></i></div>
+    <div class="sheen" id="sheen"></div>
+    <svg class="thumb" id="thumb" viewBox="0 0 120 170" aria-hidden="true">
+      <path d="M30 170 C24 124 14 92 24 58 C31 32 62 26 72 50 C82 78 80 122 92 170 Z" fill="#f6f0e2" stroke="#1d2a3a" stroke-width="2.6" stroke-linejoin="round"/>
+      <path d="M31 66 C35 46 60 43 66 62" fill="none" stroke="#1d2a3a" stroke-width="2" stroke-linecap="round"/>
+      <path d="M40 104 C48 101 58 101 66 104 M42 114 C50 112 58 112 65 114" fill="none" stroke="#1d2a3a" stroke-width="1.4" stroke-linecap="round" opacity=".55"/>
+    </svg>
+  </div>
+
+  <div class="meta">
+    <div class="scene" id="scene">Portada</div>
+    <div class="count" id="count">hoja 1 de 156</div>
+  </div>
+  <input type="range" id="bar" min="0" max="155" value="0" step="1" aria-label="Pasar las hojas">
+  <div class="row">
+    <button id="play">Pasar las hojas</button>
+    <button id="reset" class="ghost">Volver al principio</button>
+  </div>
+  <p class="hint">Arrastra el dedo sobre el librito, mueve la barra o pulsa el botón. En la web real, las hojas pasarán con el scroll.</p>
+
+<script>
+(function(){
+  var TOTAL = 156, KW = 1, KJ = 1, W = 480, H = 340, G = 262;
+  var INK = '#1d2a3a', SUN = '#e2a93b', GREEN = '#6f9a63', BLUE = '#5f9ec4';
+  var cv = document.getElementById('c'), ctx = cv.getContext('2d');
+  var book = document.getElementById('book'), sheen = document.getElementById('sheen'), thumb = document.getElementById('thumb');
+  var bar = document.getElementById('bar'), sceneEl = document.getElementById('scene'), countEl = document.getElementById('count');
+  var playBtn = document.getElementById('play'), resetBtn = document.getElementById('reset');
+  var frame = 0, timer = null, R = Math.random;
+
+  // ---------- helpers ----------
+  function rng(seed){ var a = seed >>> 0; return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function j(a){ return (R() - 0.5) * 2 * a; }
+  function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+  function lerp(a, b, t){ return a + (b - a) * clamp(t, 0, 1); }
+  function ease(t){ t = clamp(t, 0, 1); return t * t * (3 - 2 * t); }
+
+  // subdivide a straight line so the hand wobble shows along it
+  function seg(x1, y1, x2, y2){
+    var d = Math.hypot(x2 - x1, y2 - y1), n = Math.max(1, Math.round(d / 16)), p = [];
+    for (var i = 0; i <= n; i++) p.push([x1 + (x2 - x1) * i / n, y1 + (y2 - y1) * i / n]);
+    return p;
+  }
+  function poly(pts){ // subdivide every edge of a polyline
+    var out = [];
+    for (var i = 0; i < pts.length - 1; i++){
+      var s = seg(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1]);
+      if (i) s.shift();
+      out = out.concat(s);
+    }
+    return out;
+  }
+  function arc(cx, cy, r, a0, a1){
+    var n = Math.max(8, Math.round(Math.abs(a1 - a0) * r / 5)), p = [];
+    for (var i = 0; i <= n; i++){ var a = a0 + (a1 - a0) * i / n; p.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]); }
+    return p;
+  }
+  function stroke(pts, o){
+    o = o || {};
+    var jit = (o.jit == null ? 0.7 : o.jit) * KJ;
+    ctx.save();
+    ctx.globalAlpha *= o.a == null ? 1 : o.a;
+    ctx.strokeStyle = o.c || INK; ctx.lineWidth = (o.w || 1.35) * KW; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (var i = 0; i < pts.length; i++){
+      var x = pts[i][0] + j(jit), y = pts[i][1] + j(jit);
+      if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+    }
+    ctx.stroke(); ctx.restore();
+  }
+  function line(x1, y1, x2, y2, o){ stroke(seg(x1, y1, x2, y2), o); }
+  function ring(cx, cy, r, o){ var s = R() * 6.28; stroke(arc(cx, cy, r, s, s + 6.28 + 0.3), o); }
+  function dot(x, y, r){ ctx.save(); ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(x + j(.3), y + j(.3), r || 1.2, 0, 6.3); ctx.fill(); ctx.restore(); }
+  function hand(txt, x, y, size, o){
+    o = o || {};
+    ctx.save(); ctx.globalAlpha = o.a == null ? 1 : o.a; ctx.fillStyle = o.c || INK;
+    ctx.font = (o.bold ? '700 ' : '500 ') + size + 'px Caveat, "Segoe Print", "Comic Sans MS", cursive';
+    ctx.textAlign = o.align || 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.translate(x + j(.5), y + j(.5)); ctx.rotate((o.rot || 0) + j(.008)); ctx.fillText(txt, 0, 0); ctx.restore();
+  }
+
+  // paper grain, made once
+  var grain = document.createElement('canvas'); grain.width = 260; grain.height = 190;
+  (function(){
+    var g = grain.getContext('2d'), r = rng(4242);
+    for (var i = 0; i < 5200; i++){
+      g.fillStyle = r() > .5 ? 'rgba(120,96,58,' + (r() * .10).toFixed(3) + ')' : 'rgba(255,255,255,' + (r() * .16).toFixed(3) + ')';
+      g.fillRect(r() * 260, r() * 190, 1 + r() * 1.6, 1 + r() * 1.2);
+    }
+    for (var k = 0; k < 26; k++){ // a few paper fibres
+      g.strokeStyle = 'rgba(110,88,52,' + (.05 + r() * .07).toFixed(3) + ')'; g.lineWidth = .6;
+      var x = r() * 260, y = r() * 190; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (r() - .5) * 22, y + (r() - .5) * 10); g.stroke();
+    }
+  })();
+
+  function paper(f, base){
+    ctx.fillStyle = base; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.globalAlpha = .9;
+    ctx.drawImage(grain, -((f * 37) % 50), -((f * 23) % 36), 560, 410);
+    ctx.restore();
+    var g = ctx.createLinearGradient(0, 0, W, 0);
+    g.addColorStop(0, 'rgba(60,45,20,.10)'); g.addColorStop(.12, 'rgba(60,45,20,0)'); g.addColorStop(.9, 'rgba(60,45,20,0)'); g.addColorStop(1, 'rgba(60,45,20,.07)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
+
+  // ---------- timeline ----------
+  function worldAt(f){ // how far the street has scrolled
+    if (f <= 6) return 0;
+    var walk = Math.min(f, 45) - 6, w = walk * 9;
+    var dec = [6, 4, 2, 1];
+    for (var k = 46; k <= Math.min(f, 49); k++) w += dec[k - 46];
+    return w;
+  }
+  function sceneName(f){ return f < 6 ? 'Portada' : f < 20 ? '1 · El explorador' : f < 66 ? '2 · El conquistador' : f < 106 ? '3 · La ciudad' : '4 · El imperio'; }
+
+  // ---------- drawings ----------
+  function sun(cx, cy, r, turn, g){
+    g = g == null ? 1 : g;
+    ctx.save(); ctx.globalAlpha = .38; ctx.strokeStyle = SUN; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.3); ctx.stroke(); ctx.restore();
+    ring(cx, cy, r, {w: 1.6});
+    ring(cx, cy, r * .52, {w: 1.1});
+    for (var i = 0; i < 20; i++){
+      var a = turn + i * 6.283 / 20, r1 = r * 1.22, r2 = r1 + (r * (i % 2 ? 1.62 : 1.92) - r1) * g;
+      if (g <= 0) continue;
+      line(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1, cx + Math.cos(a) * r2, cy + Math.sin(a) * r2, {w: 1.25, jit: .5});
+    }
+  }
+
+  function cover(f){
+    paper(f, '#cdb58a');
+    line(30, 22, 30, H - 22, {a: .35, w: 1});
+    sun(W / 2 + 6, 132, 34, f * 0.11);
+    hand('stand by me', W / 2 + 6, 246, 44, {bold: true});
+    hand('libro 2 · así crece el grupo', W / 2 + 6, 276, 22, {a: .75});
+    hand('pasa las hojas  →', W / 2 + 6, H - 24, 17, {a: .6});
+  }
+
+  function ground(world){
+    stroke(seg(-10, G, W + 10, G), {w: 1.5, jit: .55});
+    for (var wx = 0; wx < 2000; wx += 47){
+      var x = wx - world;
+      if (x < -20 || x > W + 20) continue;
+      var k = (wx / 47) % 3;
+      if (k === 0) line(x, G + 7, x + 9, G + 7, {a: .55, w: 1, jit: .4});
+      else if (k === 1) stroke(arc(x, G + 5, 2.6, 3.3, 6.1), {a: .6, w: 1, jit: .3});
+      else line(x, G + 11, x + 5, G + 10, {a: .4, w: 1, jit: .4});
+    }
+  }
+
+  function skyline(world){ // far, faint, moves slowly
+    var bx = [[40, 46, 70], [96, 34, 104], [140, 52, 58], [214, 40, 88], [270, 60, 66], [352, 38, 112], [404, 56, 74], [476, 44, 92], [540, 50, 62], [610, 40, 100]];
+    for (var i = 0; i < bx.length; i++){
+      var x = bx[i][0] - world * .32, w = bx[i][1], h = bx[i][2];
+      if (x + w < -10 || x > W + 10) continue;
+      stroke(poly([[x, G], [x, G - h], [x + w, G - h], [x + w, G]]), {a: .26, w: 1, jit: .5});
+      for (var r = 0; r < 3; r++) line(x + 7, G - h + 12 + r * 16, x + w - 7, G - h + 12 + r * 16, {a: .14, w: 1, jit: .4});
+    }
+  }
+
+  function lamp(x){
+    if (x < -40 || x > W + 40) return;
+    line(x, G, x, G - 128, {w: 1.4});
+    line(x - 4, G, x + 4, G, {w: 1.4});
+    stroke(arc(x + 14, G - 128, 14, 3.14, 4.9), {w: 1.3});
+    stroke(poly([[x + 12, G - 141], [x + 22, G - 141], [x + 25, G - 128], [x + 9, G - 128], [x + 12, G - 141]]), {w: 1.2, jit: .4});
+  }
+  function tree(x, green){
+    if (x < -60 || x > W + 60) return;
+    if (green){ ctx.save(); ctx.globalAlpha = .3; ctx.fillStyle = GREEN; [[x - 13, G - 82, 21], [x + 15, G - 86, 23], [x + 2, G - 106, 20]].forEach(function(c){ ctx.beginPath(); ctx.arc(c[0], c[1], c[2], 0, 6.3); ctx.fill(); }); ctx.restore(); }
+    line(x, G, x + 1, G - 62, {w: 1.5});
+    line(x + 1, G - 44, x + 13, G - 60, {w: 1.1});
+    ring(x - 13, G - 82, 21, {w: 1.2, a: .9});
+    ring(x + 15, G - 86, 23, {w: 1.2, a: .9});
+    ring(x + 2, G - 106, 20, {w: 1.2, a: .9});
+  }
+
+  function hoop(x, r, ang, cyo){
+    var cy = cyo == null ? G - r : cyo;
+    ctx.save(); ctx.globalAlpha = .36; ctx.strokeStyle = SUN; ctx.lineWidth = 5.5; ctx.beginPath(); ctx.arc(x, cy, r, 0, 6.3); ctx.stroke(); ctx.restore();
+    ring(x, cy, r, {w: 1.8, jit: .6});
+    ring(x, cy, r - 3.2, {w: .9, jit: .5, a: .7});
+    // a small knot, so you can see it turning
+    var kx = x + Math.cos(ang) * r, ky = cy + Math.sin(ang) * r;
+    line(kx - 3, ky - 3, kx + 3, ky + 3, {w: 1.6, jit: .3});
+    line(kx + 3, ky - 3, kx - 3, ky + 3, {w: 1.6, jit: .3});
+    return {x: x, y: cy};
+  }
+
+  function pencil(hx, hy, tx, ty, alpha){
+    var d = Math.hypot(tx - hx, ty - hy) || 1, ux = (tx - hx) / d, uy = (ty - hy) / d, nx = -uy, ny = ux, hw = 2.3;
+    var bx = hx - ux * 7, by = hy - uy * 7, ex = tx - ux * 9, ey = ty - uy * 9;
+    ctx.save(); ctx.globalAlpha = .42 * alpha; ctx.fillStyle = SUN;
+    ctx.beginPath(); ctx.moveTo(bx + nx * hw, by + ny * hw); ctx.lineTo(ex + nx * hw, ey + ny * hw); ctx.lineTo(ex - nx * hw, ey - ny * hw); ctx.lineTo(bx - nx * hw, by - ny * hw); ctx.closePath(); ctx.fill(); ctx.restore();
+    var o = {w: 1.15, jit: .35, a: alpha};
+    line(bx + nx * hw, by + ny * hw, ex + nx * hw, ey + ny * hw, o);
+    line(bx - nx * hw, by - ny * hw, ex - nx * hw, ey - ny * hw, o);
+    line(bx + nx * hw, by + ny * hw, bx - nx * hw, by - ny * hw, o);
+    line(bx + ux * 4 + nx * hw, by + uy * 4 + ny * hw, bx + ux * 4 - nx * hw, by + uy * 4 - ny * hw, o);
+    stroke([[ex + nx * hw, ey + ny * hw], [tx, ty], [ex - nx * hw, ey - ny * hw]], o);
+    line(ex + nx * hw, ey + ny * hw, ex - nx * hw, ey - ny * hw, {w: 1, jit: .3, a: alpha * .8});
+  }
+
+  // the boy. phase drives the walk; aim is where his front hand points
+  function boy(x, phase, moving, aim, glasses, pop, cap){
+    var bob = moving ? -Math.abs(Math.sin(phase)) * 1.8 : 0;
+    var hipY = G - 35 + bob, shY = G - 61 + bob, hdY = G - 74 + bob, hdX = x + 2;
+    // legs
+    var s = moving ? Math.sin(phase) : 0.28, c = moving ? Math.cos(phase) : 0;
+    var f1x = x + s * 13, f1y = G - Math.max(0, c) * 5, f2x = x - s * 13, f2y = G - Math.max(0, -c) * 5;
+    stroke([[x, hipY], [x + s * 8 + 3, hipY + 17], [f1x, f1y], [f1x + 6, f1y]], {w: 1.5});
+    stroke([[x, hipY], [x - s * 8 + 3, hipY + 17], [f2x, f2y], [f2x + 6, f2y]], {w: 1.5});
+    // shorts and shirt
+    stroke(poly([[x - 7, hipY - 3], [x + 7, hipY - 3], [x + 9, hipY + 9], [x + 1, hipY + 8], [x, hipY + 3], [x - 2, hipY + 8], [x - 9, hipY + 9], [x - 7, hipY - 3]]), {w: 1.25, jit: .45});
+    stroke(poly([[x - 6, hipY - 3], [x - 5, shY + 1], [x + 6, shY + 1], [x + 6, hipY - 3]]), {w: 1.3, jit: .5});
+    line(x - 1, shY + 1, x + 2, shY - 3, {w: 1.1, jit: .3});
+    // back arm
+    var ba = moving ? -s * 9 : -4;
+    stroke([[x - 3, shY + 3], [x - 7 + ba * .5, shY + 14], [x - 5 + ba, shY + 24]], {w: 1.35});
+    // front arm to the hand
+    var hx, hy;
+    if (aim){
+      var d = Math.hypot(aim[0] - (x + 4), aim[1] - (shY + 3)) || 1;
+      hx = x + 4 + (aim[0] - (x + 4)) / d * 23; hy = shY + 3 + (aim[1] - (shY + 3)) / d * 23;
+      stroke([[x + 4, shY + 3], [(x + 4 + hx) / 2 + 2, (shY + 3 + hy) / 2 + 3], [hx, hy]], {w: 1.4});
+    } else {
+      hx = x + 21; hy = shY + 14 + (moving ? Math.sin(phase * 2) * 1.2 : 0);
+      stroke([[x + 4, shY + 3], [x + 11, shY + 13], [hx, hy]], {w: 1.4});
+    }
+    // head
+    ring(hdX, hdY, 11, {w: 1.5, jit: .5});
+    stroke([[hdX + 10, hdY - 1], [hdX + 13.5, hdY + 2], [hdX + 10, hdY + 3.5]], {w: 1.2, jit: .3});
+    stroke(arc(hdX + 5, hdY + 5.5, 3.2, .3, 1.9), {w: 1.1, jit: .25});
+    stroke(arc(hdX - 1, hdY - 2.5, 12.2, 3.35, 5.75), {w: 1.5, jit: .4});
+    stroke(arc(hdX - 1.5, hdY - 1.5, 10.2, 3.6, 5.3), {w: 1.1, jit: .4, a: .8});
+    stroke([[hdX + 3, hdY - 11.5], [hdX + 10.5, hdY - 15], [hdX + 9.5, hdY - 8.5]], {w: 1.4, jit: .35});
+    stroke([[hdX - 11, hdY - 1], [hdX - 13.5, hdY + 3]], {w: 1.2, jit: .3});
+    stroke(arc(hdX - 5, hdY + 1, 2.4, 1.2, 4.6), {w: 1, jit: .2});
+    if (glasses){
+      ring(hdX + 6, hdY - 1, 4.4, {w: 1.5, jit: .3});
+      line(hdX + 1.6, hdY - 1.5, hdX - 7, hdY - 2.5, {w: 1.2, jit: .3});
+      dot(hdX + 6.5, hdY - 1, 1);
+      if (pop) for (var i = 0; i < 4; i++){ var a = -2.5 + i * .55; line(hdX + 4 + Math.cos(a) * 17, hdY - 2 + Math.sin(a) * 17, hdX + 4 + Math.cos(a) * 23, hdY - 2 + Math.sin(a) * 23, {w: 1.1, jit: .3, a: .8}); }
+    } else dot(hdX + 6, hdY - 1.5, 1.25);
+    if (cap >= 5){ // an explorer's hat
+      ctx.save(); ctx.globalAlpha = .55; ctx.fillStyle = SUN; ctx.beginPath(); ctx.arc(hdX, hdY - 9, 9.5, Math.PI, 2 * Math.PI); ctx.fill(); ctx.restore();
+      stroke(arc(hdX, hdY - 9, 9.5, Math.PI, 2 * Math.PI), {w: 1.4, jit: .3}); line(hdX - 14, hdY - 9, hdX + 15, hdY - 8, {w: 1.7, jit: .3}); line(hdX - 9, hdY - 12, hdX + 9, hdY - 12, {w: 1, jit: .2});
+      if (cap === 6) for (var q5 = 0; q5 < 4; q5++){ var a5 = -2.5 + q5 * .55; line(hdX + Math.cos(a5) * 24, hdY - 10 + Math.sin(a5) * 24, hdX + Math.cos(a5) * 31, hdY - 10 + Math.sin(a5) * 31, {w: 1.1, jit: .3, a: .8}); }
+    } else if (cap >= 3){ // a showman's top hat
+      var th = [[hdX - 7, hdY - 9], [hdX - 6.5, hdY - 25], [hdX + 6.5, hdY - 25], [hdX + 7, hdY - 9]];
+      ctx.save(); ctx.globalAlpha = .88; ctx.fillStyle = INK; ctx.beginPath(); th.forEach(function(q2, i2){ if (i2) ctx.lineTo(q2[0], q2[1]); else ctx.moveTo(q2[0], q2[1]); }); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = .95; ctx.fillStyle = SUN; ctx.fillRect(hdX - 7, hdY - 14, 14, 3.4); ctx.restore();
+      stroke(poly(th), {w: 1.3, jit: .3}); line(hdX - 12, hdY - 9, hdX + 12, hdY - 9, {w: 1.7, jit: .3});
+      if (cap === 4) for (var q3 = 0; q3 < 4; q3++){ var a3 = -2.5 + q3 * .55; line(hdX + Math.cos(a3) * 29, hdY - 12 + Math.sin(a3) * 29, hdX + Math.cos(a3) * 36, hdY - 12 + Math.sin(a3) * 36, {w: 1.1, jit: .3, a: .8}); }
+    }
+    if (cap === 1 || cap === 2){
+      var cp = [[hdX - 8, hdY - 9], [hdX - 7, hdY - 17], [hdX + 7, hdY - 17], [hdX + 8, hdY - 9], [hdX - 8, hdY - 9]];
+      ctx.save(); ctx.globalAlpha = .5; ctx.fillStyle = SUN; ctx.beginPath(); cp.forEach(function(q, i){ if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); }); ctx.fill(); ctx.restore();
+      stroke(poly(cp), {w: 1.4, jit: .3});
+      line(hdX - 7.5, hdY - 12, hdX + 7.5, hdY - 12, {w: 1, jit: .25});
+      dot(hdX, hdY - 18.5, 1.3);
+      if (cap === 2) for (var q = 0; q < 4; q++){ var a2 = -2.5 + q * .55; line(hdX + Math.cos(a2) * 22, hdY - 8 + Math.sin(a2) * 22, hdX + Math.cos(a2) * 28, hdY - 8 + Math.sin(a2) * 28, {w: 1.1, jit: .3, a: .8}); }
+    }
+    return {hx: hx, hy: hy};
+  }
+
+  function brush(hx, hy, tx, ty, alpha){
+    var d = Math.hypot(tx - hx, ty - hy) || 1, ux = (tx - hx) / d, uy = (ty - hy) / d, nx = -uy, ny = ux;
+    var bx = hx - ux * 7, by = hy - uy * 7, ex = tx - ux * 10, ey = ty - uy * 10, o = {w: 1.15, jit: .35, a: alpha};
+    line(bx + nx * 1.3, by + ny * 1.3, ex + nx * 1.3, ey + ny * 1.3, o);
+    line(bx - nx * 1.3, by - ny * 1.3, ex - nx * 1.3, ey - ny * 1.3, o);
+    line(ex + nx * 3, ey + ny * 3, ex - nx * 3, ey - ny * 3, o);
+    line(ex - ux * 3 + nx * 2.4, ey - uy * 3 + ny * 2.4, ex - ux * 3 - nx * 2.4, ey - uy * 3 - ny * 2.4, o);
+    var tuft = [[ex + nx * 3, ey + ny * 3], [ex + ux * 5 + nx * 4, ey + uy * 5 + ny * 4], [tx, ty], [ex + ux * 5 - nx * 4, ey + uy * 5 - ny * 4], [ex - nx * 3, ey - ny * 3]];
+    ctx.save(); ctx.globalAlpha = .8 * alpha; ctx.fillStyle = SUN; ctx.beginPath(); tuft.forEach(function(q, i){ if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); }); ctx.closePath(); ctx.fill(); ctx.restore();
+    stroke(tuft, o);
+  }
+  function key(hx, hy, tx, ty, alpha){
+    var d = Math.hypot(tx - hx, ty - hy) || 1, ux = (tx - hx) / d, uy = (ty - hy) / d, nx = -uy, ny = ux, o = {w: 1.5, jit: .3, a: alpha};
+    ctx.save(); ctx.globalAlpha = .5 * alpha; ctx.strokeStyle = SUN; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.arc(hx, hy, 5, 0, 6.3); ctx.stroke(); ctx.restore();
+    ring(hx, hy, 5, o);
+    line(hx + ux * 5, hy + uy * 5, tx, ty, o);
+    line(tx - ux * 2, ty - uy * 2, tx - ux * 2 + nx * 5, ty - uy * 2 + ny * 5, o);
+    line(tx - ux * 7, ty - uy * 7, tx - ux * 7 + nx * 4, ty - uy * 7 + ny * 4, o);
+  }
+
+  // a grown-up walking to the left with a suitcase
+  function traveller(x, phase, hat){
+    var s = Math.sin(phase), c = Math.cos(phase), bob = -Math.abs(s) * 1.5, hip = G - 44 + bob, sh = G - 76 + bob, hd = G - 88 + bob;
+    stroke([[x, hip], [x - s * 9 - 2, hip + 22], [x - s * 15, G - Math.max(0, c) * 4], [x - s * 15 - 6, G - Math.max(0, c) * 4]], {w: 1.5});
+    stroke([[x, hip], [x + s * 9 - 2, hip + 22], [x + s * 15, G - Math.max(0, -c) * 4], [x + s * 15 - 6, G - Math.max(0, -c) * 4]], {w: 1.5});
+    stroke(poly([[x - 7, hip], [x - 6, sh], [x + 6, sh], [x + 7, hip], [x - 7, hip]]), {w: 1.35, jit: .45});
+    ring(x - 1, hd, 9, {w: 1.45, jit: .45});
+    stroke([[x - 9, hd - 1], [x - 12, hd + 2], [x - 9, hd + 3]], {w: 1.15, jit: .3});
+    dot(x - 5, hd - 1.5, 1.1);
+    if (hat){ line(x - 13, hd - 7, x + 11, hd - 7, {w: 1.4, jit: .3}); stroke(poly([[x - 7, hd - 7], [x - 6, hd - 15], [x + 5, hd - 15], [x + 6, hd - 7]]), {w: 1.3, jit: .3}); }
+    else stroke(arc(x, hd - 1, 9.6, 3.6, 6.1), {w: 1.6, jit: .35});
+    var ax = x - 9 + s * 3, ay = sh + 26;
+    stroke([[x - 3, sh + 3], [x - 7, sh + 14], [ax, ay]], {w: 1.35});
+    stroke(poly([[ax - 9, ay + 2], [ax + 9, ay + 2], [ax + 9, ay + 17], [ax - 9, ay + 17], [ax - 9, ay + 2]]), {w: 1.3, jit: .4});
+    stroke(arc(ax, ay + 2, 3.5, 3.14, 6.28), {w: 1.1, jit: .2});
+  }
+  function cane(hx, hy, tx, ty, alpha){
+    var d = Math.hypot(tx - hx, ty - hy) || 1, ux = (tx - hx) / d, uy = (ty - hy) / d, bx = hx - ux * 9, by = hy - uy * 9;
+    line(bx, by, tx, ty, {w: 2.3, jit: .3, a: alpha});
+    ctx.save(); ctx.globalAlpha = .95 * alpha; ctx.fillStyle = SUN; ctx.beginPath(); ctx.arc(bx, by, 3.2, 0, 6.3); ctx.fill(); ctx.restore();
+    ring(bx, by, 3.2, {w: 1.1, jit: .2, a: alpha});
+  }
+  var STRINGS = [[277, G - 178, FX - 6, FT - 2, 16, 6], [FX + FW + 6, FT - 2, 468, G - 170, 9, 3], [FX + 6, G - 62, FX + FW - 6, G - 62, 5, 5]];
+  function lights(e){ // garlands of bulbs, lit one by one
+    var n = (e - 187) * 2, c = 0;
+    for (var s2 = 0; s2 < STRINGS.length; s2++){
+      var S = STRINGS[s2], pts = [];
+      for (var i = 0; i <= 12; i++){ var u = i / 12; pts.push([lerp(S[0], S[2], u), lerp(S[1], S[3], u) + Math.sin(u * Math.PI) * S[4]]); }
+      stroke(pts, {w: .9, jit: .25, a: .7});
+      for (i = 0; i < S[5]; i++, c++){
+        if (c >= n) continue;
+        var u2 = (i + .5) / S[5], bx = lerp(S[0], S[2], u2), by = lerp(S[1], S[3], u2) + Math.sin(u2 * Math.PI) * S[4] + 3, tw = (e + c) % 3 === 0 ? .55 : 1;
+        ctx.save(); ctx.fillStyle = SUN; ctx.globalAlpha = .28 * tw; ctx.beginPath(); ctx.arc(bx, by, 6, 0, 6.3); ctx.fill(); ctx.globalAlpha = .95; ctx.beginPath(); ctx.arc(bx, by, 2.5, 0, 6.3); ctx.fill(); ctx.restore();
+      }
+    }
+  }
+  // the host: standing, in a Hawaiian shirt, happy, welcoming the guests
+  var CORAL = '#e0705a';
+  function host(x, e){
+    var hip = G - 44, sh = G - 76, hd = G - 89 - Math.abs(Math.sin(e * .8)) * 1.5, w = Math.sin(e * 1.5) * 5;
+    stroke([[x - 4, hip + 10], [x - 6, G], [x - 1, G]], {w: 1.5}); stroke([[x + 4, hip + 10], [x + 7, G], [x + 12, G]], {w: 1.5});
+    stroke(poly([[x - 8, hip - 2], [x + 8, hip - 2], [x + 9, hip + 12], [x + 1, hip + 11], [x, hip + 5], [x - 1, hip + 11], [x - 9, hip + 12], [x - 8, hip - 2]]), {w: 1.25, jit: .4});
+    var shirt = [[x - 10, hip + 1], [x - 9, sh + 8], [x - 14, sh + 10], [x - 12, sh + 1], [x - 6, sh - 1], [x + 6, sh - 1], [x + 12, sh + 1], [x + 14, sh + 10], [x + 9, sh + 8], [x + 10, hip + 1]];
+    ctx.save(); ctx.globalAlpha = .62; ctx.fillStyle = CORAL; ctx.beginPath(); shirt.forEach(function(P, q){ if (q) ctx.lineTo(P[0], P[1]); else ctx.moveTo(P[0], P[1]); }); ctx.closePath(); ctx.fill();
+    var fl = [[-5, 8], [4, 14], [-3, 22], [5, 26], [0, 3], [-6, 29]];
+    for (var q = 0; q < fl.length; q++){ ctx.globalAlpha = .95; ctx.fillStyle = q % 3 === 2 ? GREEN : (q % 2 ? '#fff6dc' : SUN); ctx.beginPath(); ctx.arc(x + fl[q][0], sh + fl[q][1], q % 3 === 2 ? 2 : 2.5, 0, 6.3); ctx.fill(); }
+    ctx.restore();
+    stroke(poly(shirt.concat([shirt[0]])), {w: 1.3, jit: .4});
+    stroke([[x - 3, sh - 1], [x + 1, sh + 6], [x + 4, sh - 1]], {w: 1.1, jit: .25}); line(x + 1, sh + 6, x + 1, hip + 1, {w: .9, jit: .3, a: .7});
+    // one arm waving high, the other opening towards the door
+    stroke([[x + 12, sh + 5], [x + 18, sh - 6], [x + 21 + w, sh - 21]], {w: 1.4}); ring(x + 21 + w, sh - 23, 2.3, {w: 1.1, jit: .2});
+    stroke([[x - 12, sh + 5], [x - 19, sh + 13], [x - 27, sh + 9]], {w: 1.4}); ring(x - 29, sh + 8, 2.3, {w: 1.1, jit: .2});
+    // a happy face
+    ring(x + 1, hd, 9.5, {w: 1.45, jit: .45});
+    stroke([[x + 10, hd - 1], [x + 13, hd + 2], [x + 10, hd + 3]], {w: 1.15, jit: .3});
+    stroke(arc(x + 5, hd - 3, 2.2, 3.4, 6.0), {w: 1.2, jit: .2});
+    stroke(arc(x + 4.5, hd + 1.5, 5, .15, 2.5), {w: 1.35, jit: .25});
+    stroke(arc(x, hd - 1.5, 10.2, 3.5, 5.9), {w: 1.6, jit: .35});
+  }
+  // the owner of the building, sitting outside
+  function owner(x, f, full){
+    line(x - 36, G - 36, x - 12, G - 36, {w: 1.5, jit: .4}); line(x - 24, G - 36, x - 24, G, {w: 1.3}); line(x - 30, G, x - 18, G, {w: 1.3, jit: .3});
+    stroke(poly([[x - 29, G - 43], [x - 23, G - 43], [x - 23.5, G - 36.5], [x - 28.5, G - 36.5], [x - 29, G - 43]]), {w: 1.1, jit: .25});
+    if (!full) return;
+    stroke(poly([[x - 6, G - 28], [x + 10, G - 28], [x + 11, G - 56]]), {w: 1.3, jit: .4});
+    line(x - 4, G - 28, x - 5, G, {w: 1.2}); line(x + 9, G - 28, x + 10, G, {w: 1.2});
+    stroke([[x + 2, G - 60], [x + 3, G - 31], [x - 13, G - 31], [x - 14, G], [x - 20, G]], {w: 1.5});
+    stroke(poly([[x - 5, G - 60], [x + 8, G - 60], [x + 8, G - 34], [x - 4, G - 34], [x - 5, G - 60]]), {w: 1.3, jit: .45});
+    ring(x + 1, G - 71, 9, {w: 1.45, jit: .45});
+    stroke([[x - 7, G - 72], [x - 10.5, G - 69], [x - 7, G - 68]], {w: 1.15, jit: .3});
+    dot(x - 3.5, G - 73, 1.1);
+    line(x - 9, G - 66, x - 3, G - 65.5, {w: 2, jit: .25});
+    stroke(arc(x + 2, G - 72, 9.6, 4.4, 6.5), {w: 1.6, jit: .35});
+    var lift = Math.sin(f * .9) > .3 ? -6 : 0;
+    stroke([[x - 2, G - 55], [x - 9, G - 46 + lift * .4], [x - 20, G - 41 + lift]], {w: 1.35});
+  }
+
+  function dog(x, phase, moving, f, lookUp){
+    var b = moving ? Math.sin(phase * 2) * 1 : 0, y = G - 16 + b;
+    stroke(poly([[x - 16, y - 9], [x + 12, y - 10], [x + 16, y - 2], [x + 10, y + 1], [x - 13, y + 1], [x - 17, y - 4], [x - 16, y - 9]]), {w: 1.35, jit: .5});
+    var hx = x + 20, hy = y - 15 - (lookUp ? 3 : 0);
+    ring(hx, hy, 6.6, {w: 1.35, jit: .4});
+    var up = lookUp ? -3 : 0;
+    stroke([[hx + 5, hy - 1 + up * .3], [hx + 12, hy + 1 + up], [hx + 5.5, hy + 4 + up * .3]], {w: 1.25, jit: .3});
+    dot(hx + 12, hy + 1 + up, 1.3); dot(hx + 2.2, hy - 1.6, 1);
+    stroke([[hx - 3, hy - 5], [hx - 7, hy + 3], [hx - 1.5, hy + 0.5]], {w: 1.25, jit: .3});
+    var wag = Math.sin(f * 2.2) * 5;
+    stroke([[x - 16, y - 8], [x - 21, y - 15], [x - 23 + wag, y - 22]], {w: 1.3, jit: .4});
+    var offs = [-12, -7, 8, 12];
+    for (var i = 0; i < 4; i++){
+      var sw = moving ? Math.sin(phase + (i % 2 ? 3.14 : 0) + (i > 1 ? 1.2 : 0)) * 6 : 0;
+      var lift = moving ? Math.max(0, Math.cos(phase + (i % 2 ? 3.14 : 0) + (i > 1 ? 1.2 : 0))) * 3 : 0;
+      stroke([[x + offs[i], y + 1], [x + offs[i] + sw * .4, y + 9], [x + offs[i] + sw, G - lift]], {w: 1.25, jit: .35});
+    }
+  }
+
+  // the building he draws, as a list of pen strokes in drawing order
+  var FX = 304, FW = 138, FT = 74, DXG = FX + FW / 2;
+  var FACADE = (function(){
+    var L = [], dx = DXG;
+    L.push(poly([[FX, G], [FX, FT], [FX + FW, FT], [FX + FW, G]]));
+    L.push(seg(dx - 15, G, dx - 15, G - 46).concat(arc(dx, G - 46, 15, Math.PI, 2 * Math.PI)).concat(seg(dx + 15, G - 46, dx + 15, G)));
+    L.push(seg(FX, G - 70, FX + FW, G - 70));
+    // the room with a terrace: a tall glass door and a balcony in front of it
+    L.push(poly([[dx - 22, G - 70], [dx - 22, G - 122], [dx + 22, G - 122], [dx + 22, G - 70]]));
+    L.push(seg(dx, G - 122, dx, G - 70));
+    L.push(poly([[dx - 36, G - 70], [dx - 36, G - 65], [dx + 36, G - 65], [dx + 36, G - 70]]));
+    L.push(poly([[dx - 36, G - 70], [dx - 36, G - 87], [dx + 36, G - 87], [dx + 36, G - 70]]));
+    for (var b = -27; b <= 27; b += 9) L.push(seg(dx + b, G - 87, dx + b, G - 70));
+    L.push(seg(FX, G - 130, FX + FW, G - 130));
+    // one wide window upstairs
+    L.push(poly([[dx - 32, G - 142], [dx - 32, G - 178], [dx + 32, G - 178], [dx + 32, G - 142], [dx - 32, G - 142]]));
+    L.push(seg(dx, G - 178, dx, G - 142));
+    L.push(poly([[FX - 6, FT], [FX - 6, FT - 8], [FX + FW + 6, FT - 8], [FX + FW + 6, FT], [FX - 6, FT]]));
+    return L;
+  })();
+  var ROOMS = [
+    {st: 86, x: DXG - 22, y: G - 122, w: 44, h: 52, cx: DXG, cy: G - 100, r: 30},
+    {st: 94, x: DXG - 32, y: G - 178, w: 64, h: 36, cx: DXG, cy: G - 160, r: 36},
+    {st: 102, cx: DXG + 28, cy: G - 92, r: 14}
+  ];
+  function furnish(k, n){
+    var o = {w: 1.05, jit: .25}, dx = DXG, x, b;
+    if (k === 0){
+      line(dx - 11, G - 122, dx - 11, G - 113, o); stroke(poly([[dx - 16, G - 106], [dx - 13.5, G - 113], [dx - 8.5, G - 113], [dx - 6, G - 106], [dx - 16, G - 106]]), o);
+      if (n >= 1){ stroke([[dx - 21, G - 120], [dx - 16, G - 104], [dx - 20, G - 89]], o); stroke([[dx + 21, G - 120], [dx + 16, G - 104], [dx + 20, G - 89]], o); }
+      if (n >= 2){ stroke(poly([[dx + 3, G - 88], [dx + 3, G - 98], [dx + 19, G - 98], [dx + 19, G - 88]]), o); stroke(arc(dx + 8, G - 98, 3.5, Math.PI, 2 * Math.PI), o); }
+    }
+    if (k === 1){
+      x = dx - 27; b = G - 143; stroke(poly([[x, b], [x, b - 19], [x + 5, b - 19], [x + 5, b - 9], [x + 16, b - 9], [x + 16, b]]), o); line(x, b - 5, x + 16, b - 5, o);
+      if (n >= 1){ x = dx + 19; stroke(poly([[x - 4, b], [x - 3, b - 8], [x + 4, b - 8], [x + 5, b]]), o); stroke([[x, b - 8], [x - 6, b - 21]], o); stroke([[x, b - 8], [x, b - 25]], o); stroke([[x, b - 8], [x + 7, b - 20]], o);
+        ctx.save(); ctx.globalAlpha = .4; ctx.fillStyle = GREEN; ctx.beginPath(); ctx.arc(x, b - 19, 8, 0, 6.3); ctx.fill(); ctx.restore(); }
+      if (n >= 2){ stroke(poly([[dx + 4, G - 174], [dx + 15, G - 174], [dx + 15, G - 163], [dx + 4, G - 163], [dx + 4, G - 174]]), o); stroke([[dx + 5, G - 165], [dx + 8, G - 170], [dx + 11, G - 167], [dx + 14, G - 170]], o); }
+    }
+    if (k === 2){ // dressing the terrace: an awning and two planters
+      var aw = [[dx - 24, G - 123], [dx + 24, G - 123], [dx + 33, G - 109], [dx - 33, G - 109]];
+      ctx.save(); ctx.globalAlpha = .6; ctx.fillStyle = SUN; ctx.beginPath(); aw.forEach(function(P, q){ if (q) ctx.lineTo(P[0], P[1]); else ctx.moveTo(P[0], P[1]); }); ctx.closePath(); ctx.fill(); ctx.restore();
+      stroke(poly(aw.concat([aw[0]])), {w: 1.15, jit: .3});
+      for (var q = -2; q <= 2; q++) line(dx + q * 9.6, G - 123, dx + q * 13.2, G - 109, {w: .9, jit: .2, a: .7});
+      for (q = -3; q < 3; q++) stroke(arc(dx + q * 11 + 5.5, G - 109, 5.5, 0, Math.PI), {w: 1, jit: .2});
+      if (n >= 1) [-30, 30].forEach(function(off){
+        ctx.save(); ctx.globalAlpha = .45; ctx.fillStyle = GREEN; ctx.beginPath(); ctx.arc(dx + off, G - 93, 6.5, 0, 6.3); ctx.fill(); ctx.restore();
+        stroke(arc(dx + off, G - 93, 6.5, 2.6, 6.9), {w: .9, jit: .3, a: .6});
+        if (n >= 2){ ctx.save(); ctx.fillStyle = SUN; ctx.beginPath(); ctx.arc(dx + off - 2, G - 96, 1.8, 0, 6.3); ctx.arc(dx + off + 3, G - 92, 1.6, 0, 6.3); ctx.fill(); ctx.restore(); }
+      });
+    }
+  }
+  function guest(e){ // someone comes out onto the terrace and waves
+    var x = DXG - 9, w = Math.sin(e * 1.4) * 4;
+    ring(x, G - 106, 5, {w: 1.25, jit: .25}); dot(x + 2, G - 107, .9);
+    stroke(poly([[x - 5, G - 88], [x - 4, G - 100], [x + 4, G - 100], [x + 5, G - 88]]), {w: 1.2, jit: .3});
+    stroke([[x + 4, G - 98], [x + 9, G - 104], [x + 11 + w, G - 113]], {w: 1.15, jit: .25});
+  }
+  var FLEN = FACADE.map(function(p){ var d = 0; for (var i = 1; i < p.length; i++) d += Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]); return d; });
+  var FTOTAL = FLEN.reduce(function(a, b){ return a + b; }, 0);
+
+  function facade(t){ // t 0..1, returns where the pen is
+    var left = t * FTOTAL, pen = FACADE[0][0];
+    for (var k = 0; k < FACADE.length; k++){
+      var p = FACADE[k];
+      if (left <= 0) break;
+      if (left >= FLEN[k]){ stroke(p, {w: 1.25, jit: .45}); left -= FLEN[k]; pen = p[p.length - 1]; continue; }
+      var out = [p[0]], acc = 0;
+      for (var i = 1; i < p.length; i++){
+        var d = Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]);
+        if (acc + d >= left){ var u = (left - acc) / (d || 1); out.push([p[i - 1][0] + (p[i][0] - p[i - 1][0]) * u, p[i - 1][1] + (p[i][1] - p[i - 1][1]) * u]); break; }
+        out.push(p[i]); acc += d;
+      }
+      stroke(out, {w: 1.25, jit: .45}); pen = out[out.length - 1]; left = 0;
+    }
+    return pen;
+  }
+
+  function palm(x, h, t, sc, al){
+    al = al == null ? 1 : al;
+    if (t <= 0) return;
+    ctx.save(); ctx.globalAlpha = al; palmInner(x, h, t, sc); ctx.restore();
+  }
+  function palmInner(x, h, t, sc){
+    var n = 8, L = [], Rr = [], tx = x + 9 * t, ty = G - h * t;
+    for (var i = 0; i <= n; i++){ var u = i / n, px = x + 9 * t * u * u, py = G - h * t * u; L.push([px - 2.4 + u, py]); Rr.push([px + 2.4 - u, py]); if (i && i % 2 === 0 && i < n) line(px - 2.2, py, px + 2.2, py - 1.5, {w: 1, jit: .25, a: .8}); }
+    stroke(L, {w: 1.3, jit: .35}); stroke(Rr, {w: 1.3, jit: .35});
+    if (t < .5) return;
+    var g = (t - .5) / .5, A = [-2.95, -2.35, -1.8, -1.3, -.75, -.2];
+    for (var k = 0; k < A.length; k++){
+      var a = A[k], len = 46 * g * sc, pts = [];
+      for (var q = 0; q <= 7; q++){ var v = q / 7; pts.push([tx + Math.cos(a) * len * v, ty + Math.sin(a) * len * v + 30 * g * sc * v * v]); }
+      ctx.save(); ctx.globalAlpha = .34; ctx.strokeStyle = GREEN; ctx.lineWidth = 8 * sc; ctx.lineCap = 'round'; ctx.beginPath(); pts.forEach(function(P, i2){ if (i2) ctx.lineTo(P[0], P[1]); else ctx.moveTo(P[0], P[1]); }); ctx.stroke(); ctx.restore();
+      stroke(pts, {w: 1.25, jit: .3});
+      for (q = 2; q <= 7; q++) line(pts[q][0], pts[q][1], pts[q][0] - Math.cos(a) * 2.5, pts[q][1] + 6 * g * sc, {w: .9, jit: .25, a: .85});
+    }
+    if (t >= 1){ ring(tx - 2, ty + 3, 2.6, {w: 1.1, jit: .2}); ring(tx + 3, ty + 4, 2.6, {w: 1.1, jit: .2}); }
+  }
+  function leafPlant(x, sz, t){
+    if (t <= 0) return;
+    var A = [-2.5, -1.57, -.64];
+    for (var k = 0; k < A.length; k++){
+      var a = A[k], len = (k === 1 ? 30 : 24) * sz * t, w = len * .24, dx = Math.cos(a), dy = Math.sin(a), Lp = [], Rp = [];
+      for (var i = 0; i <= 6; i++){ var u = i / 6, cx = x + dx * len * u, cy = G + dy * len * u + 5 * u * u * sz, off = Math.sin(u * Math.PI) * w; Lp.push([cx - dy * off, cy + dx * off]); Rp.unshift([cx + dy * off, cy - dx * off]); }
+      var shape = Lp.concat(Rp);
+      ctx.save(); ctx.globalAlpha = .3; ctx.fillStyle = GREEN; ctx.beginPath(); shape.forEach(function(P, n){ if (n) ctx.lineTo(P[0], P[1]); else ctx.moveTo(P[0], P[1]); }); ctx.closePath(); ctx.fill(); ctx.restore();
+      stroke(shape.concat([shape[0]]), {w: .85, jit: .3, a: .42});
+    }
+  }
+  // a gentle climber: a soft green line with small round leaves, no hard ink
+  function climber(pts, t){
+    var n = Math.max(2, Math.round(pts.length * t)), part = pts.slice(0, n);
+    ctx.save(); ctx.globalAlpha = .34; ctx.strokeStyle = GREEN; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.beginPath(); part.forEach(function(P, k){ var x = P[0] + j(.4), y = P[1] + j(.4); if (k) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); ctx.stroke();
+    ctx.globalAlpha = .42; ctx.fillStyle = GREEN;
+    for (var k = 1; k < part.length; k++){ var sd = k % 2 ? -1 : 1; ctx.beginPath(); ctx.arc(part[k][0] + sd * 3.6 + j(.4), part[k][1] + j(.4), 2.7, 0, 6.3); ctx.fill(); }
+    ctx.restore();
+  }
+  var CLIMB = (function(){ var p = []; for (var y = G; y >= G - 126; y -= 9) p.push([FX + 5 + Math.sin(y * .07) * 3, y]); return p; })();
+  var PLANTS = [[320, .95, 118], [452, .85, 120], [228, .9, 121], [150, .8, 123], [62, .9, 125]];
+  function gardenBack(e){ // palms standing behind the building and down the street
+    palm(246, 196, clamp((e - 117) / 7, 0, 1), 1.05, .5);
+    palm(214, 150, clamp((e - 119) / 6, 0, 1), .9, .42);
+    palm(150, 172, clamp((e - 121) / 6, 0, 1), .95, .38);
+    palm(58, 136, clamp((e - 123) / 6, 0, 1), .85, .34);
+  }
+  function garden(e){
+    var reach = clamp((e - 117) / 9, 0, 1);
+    if (reach > 0){ ctx.save(); ctx.globalAlpha = .16; ctx.fillStyle = GREEN; var x0 = lerp(300, -10, reach), x1 = lerp(320, W + 10, reach); ctx.fillRect(x0, G - 3, x1 - x0, 7); ctx.restore(); }
+    for (var i = 0; i < PLANTS.length; i++) leafPlant(PLANTS[i][0], PLANTS[i][1], clamp((e - PLANTS[i][2]) / 2, 0, 1));
+    palm(272, 238, clamp((e - 115) / 7, 0, 1), 1.3);
+    palm(462, 222, clamp((e - 117) / 7, 0, 1), 1.15);
+    if (e >= 120) climber(CLIMB, clamp((e - 120) / 6, 0, 1));
+    for (i = 0; i < PLANTS.length; i += 2) if (e >= PLANTS[i][2] + 3){ // a few flowers
+      var fx = PLANTS[i][0] + 7, fy = G - 15 * PLANTS[i][1];
+      ctx.save(); ctx.globalAlpha = .9; ctx.fillStyle = SUN; ctx.beginPath(); ctx.arc(fx, fy, 2.3, 0, 6.3); ctx.fill(); ctx.restore();
+    }
+  }
+  function glider(e){ // someone flying a paraglider across the sky
+    var gx = -46 + (e - 130) * 5.2, gy = 44 + Math.sin(e * .3) * 6, cy = gy + 30, a0 = -2.42, a1 = -.72;
+    ctx.save(); ctx.globalAlpha = .6; ctx.strokeStyle = SUN; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(gx, cy, 34, a0, a1); ctx.stroke();
+    ctx.globalAlpha = .55; ctx.strokeStyle = BLUE; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(gx, cy, 34, -1.78, -1.36); ctx.stroke(); ctx.restore();
+    stroke(arc(gx, cy, 37, a0, a1), {w: 1.3, jit: .3}); stroke(arc(gx, cy, 31, a0, a1), {w: 1.1, jit: .3});
+    for (var k = 0; k <= 6; k++){ var a = a0 + (a1 - a0) * k / 6; line(gx + Math.cos(a) * 31, cy + Math.sin(a) * 31, gx + Math.cos(a) * 37, cy + Math.sin(a) * 37, {w: 1, jit: .2}); }
+    var px = gx + 3, py = gy + 46 + Math.sin(e * .3 + 1) * 1.5;
+    for (k = 0; k <= 3; k++){ a = a0 + (a1 - a0) * k / 3; line(gx + Math.cos(a) * 31, cy + Math.sin(a) * 31, px, py - 6, {w: .8, jit: .2, a: .6}); }
+    ring(px, py - 9, 3.3, {w: 1.15, jit: .2});
+    stroke([[px, py - 6], [px - 1, py + 2], [px + 7, py + 3], [px + 9, py + 8]], {w: 1.2, jit: .2});
+    stroke([[px, py - 3], [px + 5, py - 6]], {w: 1.05, jit: .2});
+  }
+  function pool(e){
+    var b = clamp((e - 127) / 4, 0, 1), ry = FT - 8, x0 = FX + 36, x1 = FX + FW - 8;
+    if (b <= 0) return;
+    var re = lerp(FX - 2, FX + FW + 2, b);
+    line(FX - 2, ry - 13, re, ry - 13, {w: 1.1, jit: .3});
+    for (var x = FX - 2; x <= re; x += 23.6) line(x, ry, x, ry - 13, {w: 1, jit: .25});
+    var we = lerp(x0, x1, b);
+    ctx.save(); ctx.globalAlpha = .5; ctx.fillStyle = BLUE; ctx.fillRect(x0, ry - 8, we - x0, 8); ctx.restore();
+    var wv = []; for (x = x0; x <= we; x += 6) wv.push([x, ry - 8 + Math.sin(e * 1.1 + x * .35) * 1.1]);
+    if (wv.length > 1) stroke(wv, {w: 1.1, jit: .2});
+    line(x0, ry, x0, ry - 10, {w: 1.2, jit: .2}); if (b >= 1) line(x1, ry, x1, ry - 10, {w: 1.2, jit: .2});
+    if (b > .5){ // parasol
+      var px = FX + 22; line(px, ry, px, ry - 31, {w: 1.2, jit: .25});
+      ctx.save(); ctx.globalAlpha = .6; ctx.fillStyle = SUN; ctx.beginPath(); ctx.arc(px, ry - 30, 14, Math.PI, 2 * Math.PI); ctx.fill(); ctx.restore();
+      stroke(arc(px, ry - 30, 14, Math.PI, 2 * Math.PI).concat([[px - 14, ry - 30]]), {w: 1.2, jit: .3});
+    }
+    if (e < 132) return;
+    var ks = [x0 + 30, x0 + 68];
+    for (var i = 0; i < 2; i++){ // two children in the water
+      var ky = ry - 13 + Math.sin(e * 1.2 + i * 2) * 1.6, kx = ks[i];
+      ring(kx, ky, 4.2, {w: 1.2, jit: .25}); dot(kx + (i ? -1.5 : 1.5), ky - .5, .8);
+      var up = Math.sin(e * 1.7 + i) > 0 ? 7 : 4;
+      stroke([[kx - 4, ky + 4], [kx - 8, ky - up]], {w: 1.1, jit: .25}); stroke([[kx + 4, ky + 4], [kx + 8, ky - up]], {w: 1.1, jit: .25});
+    }
+    var c = (e % 6) / 6, dir = Math.floor(e / 6) % 2, bu = dir ? 1 - c : c; // a ball going back and forth
+    var bxp = lerp(ks[0] + 8, ks[1] - 8, bu), byp = ry - 24 - Math.sin(c * Math.PI) * 13;
+    ctx.save(); ctx.globalAlpha = .85; ctx.fillStyle = SUN; ctx.beginPath(); ctx.arc(bxp, byp, 4, 0, 6.3); ctx.fill(); ctx.restore(); ring(bxp, byp, 4, {w: 1, jit: .2});
+    var v = (e % 8) / 8, jx = x0 - 14 + v * 24, jy = ry - 14 - Math.sin(v * Math.PI) * 17; // one more jumping in
+    if (v < .82){
+      ring(jx, jy - 9, 3.6, {w: 1.15, jit: .2});
+      stroke([[jx, jy - 5], [jx, jy + 3]], {w: 1.2, jit: .2});
+      stroke([[jx, jy + 3], [jx + 5, jy + 5], [jx + 2, jy + 9]], {w: 1.1, jit: .2});
+      stroke([[jx - 5, jy - 10], [jx, jy - 3], [jx + 5, jy - 10]], {w: 1.1, jit: .2});
+    } else for (var z = 0; z < 5; z++){ var az = -2.6 + z * .5; line(x0 + 10 + Math.cos(az) * 5, ry - 9 + Math.sin(az) * 5, x0 + 10 + Math.cos(az) * 12, ry - 9 + Math.sin(az) * 12, {w: 1.1, jit: .3}); }
+  }
+
+  var WINS = (function(){ var wx = [FX + 14, FX + 58, FX + 102], lo = G - 114, hi = G - 172; return [[wx[0], lo], [wx[1], lo], [wx[2], lo], [wx[2], hi], [wx[1], hi], [wx[0], hi]]; })();
+  function wash(x, y, w, h, a){ ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = SUN; ctx.fillRect(x + j(.6), y + j(.6), w, h); ctx.restore(); }
+  function item(k, x, y){ // one small thing per room, inside a 22 x 30 window
+    var o = {w: 1.05, jit: .25};
+    if (k === 0){ line(x + 11, y + 1, x + 11, y + 9, o); stroke(poly([[x + 6, y + 16], [x + 8.5, y + 9], [x + 13.5, y + 9], [x + 16, y + 16], [x + 6, y + 16]]), o); }
+    if (k === 1){ stroke(poly([[x + 3, y + 28], [x + 3, y + 20], [x + 19, y + 20], [x + 19, y + 28]]), o); stroke(arc(x + 7, y + 20, 3, 3.14, 6.28), o); line(x + 3, y + 14, x + 3, y + 20, o); }
+    if (k === 2){ stroke([[x + 2, y + 2], [x + 8, y + 12], [x + 3, y + 27]], o); stroke([[x + 20, y + 2], [x + 14, y + 12], [x + 19, y + 27]], o); line(x + 1, y + 2, x + 21, y + 2, o); }
+    if (k === 3){ stroke(poly([[x + 7, y + 28], [x + 8, y + 21], [x + 14, y + 21], [x + 15, y + 28]]), o); stroke([[x + 11, y + 21], [x + 6, y + 10]], o); stroke([[x + 11, y + 21], [x + 11, y + 7]], o); stroke([[x + 11, y + 21], [x + 17, y + 11]], o); }
+    if (k === 4){ stroke(poly([[x + 5, y + 28], [x + 5, y + 12], [x + 9, y + 12], [x + 9, y + 20], [x + 17, y + 20], [x + 17, y + 28]]), o); line(x + 5, y + 23, x + 17, y + 23, o); }
+    if (k === 5){ stroke(poly([[x + 5, y + 7], [x + 17, y + 7], [x + 17, y + 19], [x + 5, y + 19], [x + 5, y + 7]]), o); stroke([[x + 6, y + 17], [x + 10, y + 11], [x + 13, y + 15], [x + 16, y + 12]], o); }
+  }
+
+  // ---------- book 2: the camera pulls back and the street lights up ----------
+  var BLD = [ // x, width, height, the hoja on which it joins
+    [520, 110, 150, 35], [-158, 118, 160, 61], [652, 92, 214, 68], [-282, 100, 224, 72], [766, 128, 168, 77], [-424, 128, 142, 81],
+    [916, 100, 196, 86], [-548, 104, 190, 90], [1038, 118, 150, 94], [-688, 120, 160, 98], [1178, 104, 226, 101], [-816, 108, 210, 104]
+  ];
+  function keyf(e, K){ // piecewise eased keyframes: [[hoja, value], ...]
+    if (e <= K[0][0]) return K[0][1];
+    for (var i = 1; i < K.length; i++) if (e <= K[i][0]) return lerp(K[i - 1][1], K[i][1], ease((e - K[i - 1][0]) / (K[i][0] - K[i - 1][0])));
+    return K[K.length - 1][1];
+  }
+  function mirror(x, fn){ ctx.save(); ctx.translate(2 * x, 0); ctx.scale(-1, 1); var r = fn(); ctx.restore(); return r; }
+  function smallSun(cx, cy, r, turn, g){
+    ctx.save(); ctx.globalAlpha = .8 * g; ctx.fillStyle = SUN; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.3); ctx.fill(); ctx.restore();
+    ring(cx, cy, r, {w: 1.3, jit: .3});
+    for (var i = 0; i < 10; i++){ var a = turn + i * .6283; line(cx + Math.cos(a) * r * 1.35, cy + Math.sin(a) * r * 1.35, cx + Math.cos(a) * r * (1.35 + .75 * g), cy + Math.sin(a) * r * (1.35 + .75 * g), {w: 1.1, jit: .3}); }
+  }
+  function building(b, i, e){
+    var x = b[0], w = b[1], h = b[2], ct = b[3], top = G - h, lit = e >= ct, g = clamp((e - ct) / 5, 0, 1), al = lit ? 1 : .5;
+    ctx.save(); ctx.fillStyle = '#f3ecdc'; ctx.fillRect(x, top, w, h); ctx.restore();
+    var cols = Math.max(2, Math.round(w / 40)), rows = Math.max(2, Math.round((h - 46) / 46)), gap = w / (cols * 2 + 1), ww = gap, wh = 22;
+    for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++){
+      var wx = x + gap + c * gap * 2, wy = top + 18 + r * ((h - 60) / rows);
+      if (lit && (e - ct) >= (r * cols + c) * .5) wash(wx, wy, ww, wh, .55);
+      stroke(poly([[wx, wy + wh], [wx, wy], [wx + ww, wy], [wx + ww, wy + wh], [wx, wy + wh]]), {w: 1.1, jit: .35, a: al});
+      if (!lit) line(wx, wy, wx + ww, wy + wh, {w: .9, jit: .3, a: .35});
+    }
+    if (lit) wash(x + w / 2 - 9, G - 28, 18, 28, .55);
+    stroke(seg(x + w / 2 - 9, G, x + w / 2 - 9, G - 28).concat(arc(x + w / 2, G - 28, 9, Math.PI, 2 * Math.PI)).concat(seg(x + w / 2 + 9, G - 28, x + w / 2 + 9, G)), {w: 1.2, jit: .35, a: al});
+    stroke(poly([[x, G], [x, top], [x + w, top], [x + w, G]]), {w: 1.4, jit: .45, a: al});
+    stroke(poly([[x - 5, top], [x - 5, top - 7], [x + w + 5, top - 7], [x + w + 5, top], [x - 5, top]]), {w: 1.2, jit: .4, a: al});
+    if (!lit) return;
+    if (i % 3 === 0){ ctx.save(); ctx.globalAlpha = .5 * g; ctx.fillStyle = BLUE; ctx.fillRect(x + 14, top - 15, w - 28, 8); ctx.restore(); stroke(poly([[x + 14, top - 7], [x + 14, top - 16], [x + w - 14, top - 16], [x + w - 14, top - 7]]), {w: 1, jit: .3}); }
+    if (i % 2 === 1){ var aw = [[x + w / 2 - 16, G - 44], [x + w / 2 + 16, G - 44], [x + w / 2 + 22, G - 34], [x + w / 2 - 22, G - 34]]; ctx.save(); ctx.globalAlpha = .6 * g; ctx.fillStyle = SUN; ctx.beginPath(); aw.forEach(function(P, q){ if (q) ctx.lineTo(P[0], P[1]); else ctx.moveTo(P[0], P[1]); }); ctx.closePath(); ctx.fill(); ctx.restore(); stroke(poly(aw.concat([aw[0]])), {w: 1, jit: .3}); }
+    palm(i % 2 ? x + w + 12 : x - 12, h + 30, g, 1.05, .95);
+    line(x + w / 2, top - 7, x + w / 2, top - 30 * g - 7, {w: 1.3, jit: .3});
+    if (g > .3) smallSun(x + w / 2, top - 30 * g - 20, 11, e * .1 + i, g);
+    if (e - ct < 3) for (var q2 = 0; q2 < 8; q2++){ var a2 = q2 * .785 + .3, rr = 26 + (e - ct) * 10; line(x + w / 2 + Math.cos(a2) * rr, top - 20 + Math.sin(a2) * rr, x + w / 2 + Math.cos(a2) * (rr + 12), top - 20 + Math.sin(a2) * (rr + 12), {w: 1.2, jit: .4, a: .8}); }
+  }
+  function hotel(e){ // the hotel exactly as book 1 left it
+    ctx.save(); ctx.fillStyle = '#f3ecdc'; ctx.fillRect(FX, FT, FW, G - FT); ctx.restore();
+    gardenBack(300);
+    wash(ROOMS[0].x, ROOMS[0].y, ROOMS[0].w, ROOMS[0].h, .55); wash(ROOMS[1].x, ROOMS[1].y, ROOMS[1].w, ROOMS[1].h, .55);
+    wash(DXG - 15, G - 46, 30, 46, .6);
+    facade(1); furnish(0, 3); furnish(1, 3); furnish(2, 3);
+    stroke(poly([[DXG - 15, G], [DXG - 24, G + 5], [DXG - 24, G - 41], [DXG - 15, G - 46]]), {w: 1.3, jit: .35});
+    garden(300); pool(e + 300);
+    line(FX + FW - 8, FT - 8, FX + FW - 8, FT - 36, {w: 1.3, jit: .3}); smallSun(FX + FW - 8, FT - 48, 11, e * .1, 1);
+  }
+  function flag(hx, hy, tx, ty, e){ // a pole with a little sun pennant
+    line(hx - (tx - hx) * .25, hy - (ty - hy) * .25, tx, ty, {w: 1.8, jit: .3});
+    var wv = Math.sin(e * 1.3) * 3, pn = [[tx, ty], [tx + 20, ty + 5 + wv], [tx, ty + 13]];
+    ctx.save(); ctx.globalAlpha = .85; ctx.fillStyle = SUN; ctx.beginPath(); pn.forEach(function(P, q){ if (q) ctx.lineTo(P[0], P[1]); else ctx.moveTo(P[0], P[1]); }); ctx.closePath(); ctx.fill(); ctx.restore();
+    stroke(pn.concat([pn[0]]), {w: 1.1, jit: .3});
+  }
+  function spyglass(x0, y0, e){
+    var l = 26, t = Math.sin(e * .7) * 2;
+    stroke(poly([[x0, y0 - 2], [x0 + 12, y0 - 3 + t * .4], [x0 + 12, y0 - 4.5 + t * .4], [x0 + l, y0 - 6 + t], [x0 + l, y0 + 4 + t], [x0 + 12, y0 + 2.5 + t * .4], [x0 + 12, y0 + 1 + t * .4], [x0, y0 + 2], [x0, y0 - 2]]), {w: 1.2, jit: .3});
+    ctx.save(); ctx.globalAlpha = .6; ctx.fillStyle = SUN; ctx.fillRect(x0 + l - 3, y0 - 6 + t, 3, 10); ctx.restore();
+  }
+
+  function page(e){
+    paper(e, '#f3ecdc');
+    var z = keyf(e, [[19, 1], [45, .72], [75, .5], [104, .3], [155, .27]]);
+    var cam = keyf(e, [[19, 240], [45, 400], [75, 215], [104, 190], [155, 190]]);
+    var GS = 262;
+
+    // the big sun coming up behind the city, in the last pages
+    if (e >= 106){
+      var up = ease((e - 106) / 22), sx = W / 2 + 34, sy = GS + 40 - up * 150, sr = 58, gg = clamp((e - 118) / 10, 0, 1);
+      ctx.save(); ctx.globalAlpha = .5; ctx.fillStyle = SUN; ctx.beginPath(); ctx.arc(sx, sy, sr, 0, 6.3); ctx.fill(); ctx.restore();
+      ring(sx, sy, sr, {w: 1.7}); ring(sx, sy, sr * .55, {w: 1.1, a: .8});
+      for (var i = 0; i < 24; i++){ var a = e * .05 + i * .2618, r1 = sr * 1.16, r2 = r1 + sr * (i % 2 ? .28 : .5) * gg; if (gg > 0) line(sx + Math.cos(a) * r1, sy + Math.sin(a) * r1, sx + Math.cos(a) * r2, sy + Math.sin(a) * r2, {w: 1.3, jit: .5}); }
+      ctx.save(); ctx.fillStyle = '#f3ecdc'; ctx.fillRect(0, GS, W, H - GS); ctx.restore(); // the sun stays behind the ground
+      ctx.save(); ctx.globalAlpha = .9; ctx.drawImage(grain, -((e * 37) % 50), GS - ((e * 23) % 36), 560, 410); ctx.restore();
+    }
+
+    ctx.save();
+    ctx.translate(W / 2, GS); ctx.scale(z, z); ctx.translate(-cam, -G);
+    KW = Math.pow(1 / z, .78); KJ = Math.pow(1 / z, .85);
+    var x0 = cam - W / 2 / z - 20, x1 = cam + W / 2 / z + 20;
+
+    stroke(seg(x0, G, x1, G), {w: 1.5, jit: .55});
+    lamp(-1); tree(97, true);
+    for (var k = 0; k < BLD.length; k++) if (BLD[k][0] + BLD[k][1] + 60 > x0 && BLD[k][0] - 60 < x1) building(BLD[k], k, e);
+    hotel(e);
+    host(430, e);
+
+    // the boy: explorer first, then he runs with the flag
+    var bx, moving = false, left = false, aim = null;
+    if (e < 20) bx = 336;
+    else if (e < 33){ bx = lerp(336, 498, (e - 20) / 12); moving = true; }
+    else if (e < 40){ bx = 498; aim = e >= 34 && e < 37 ? [524, G - 64] : [bx + 16, G - 110]; }
+    else if (e < 59){ bx = lerp(498, -20, (e - 40) / 18); moving = true; left = true; }
+    else if (e < 66){ bx = -20; left = true; aim = e >= 60 && e < 63 ? [bx + 22, G - 64] : [bx + 16, G - 110]; }
+    else { bx = -20; aim = [bx + 14, G - 112 + Math.sin(e * 1.1) * 4]; }
+    var phase = bx / 12, capv = e < 10 ? 3 : (e < 12 ? 6 : 5);
+    var drawBoy = function(){
+      var dgx = bx - 50;
+      dog(dgx, phase * 1.5 + e * .9, moving, e, !moving);
+      if (e >= 10 && e < 20) aim = [bx + 22, G - 74];
+      var b = boy(bx, phase, moving, aim, true, false, capv);
+      if (e < 10) cane(b.hx, b.hy, b.hx + 8, b.hy - 24, 1);
+      else if (e < 20) spyglass(bx + 14, G - 76, e);
+      else {
+        var tx = b.hx + 4, ty = b.hy - 46;
+        if (aim && (e >= 34 && e < 37 || e >= 60 && e < 63)){ var d = Math.hypot(aim[0] - b.hx, aim[1] - b.hy) || 1; tx = b.hx + (aim[0] - b.hx) / d * 34; ty = b.hy + (aim[1] - b.hy) / d * 34; }
+        flag(b.hx, b.hy, tx, ty, e);
+      }
+    };
+    if (z < .6){ // keep him readable as the view widens
+      var kz = Math.min(2.6, .6 / z);
+      ctx.save(); ctx.translate(bx, G); ctx.scale(kz, kz); ctx.translate(-bx, -G); KW /= Math.pow(kz, .6); KJ /= Math.pow(kz, .6);
+      if (left) mirror(bx, drawBoy); else drawBoy();
+      ctx.restore(); KW = Math.pow(1 / z, .78); KJ = Math.pow(1 / z, .85);
+    } else if (left) mirror(bx, drawBoy); else drawBoy();
+    if (e >= 16 && e < 19){ hand('!', bx + 50, G - 96, 26, {bold: true}); }
+
+    // other children rolling their own hoops through the lit streets
+    if (e >= 112){
+      var kids = [[-520, 1], [640, -1], [980, 1], [-300, -1]];
+      for (k = 0; k < kids.length; k++){
+        var kx = kids[k][0] + kids[k][1] * (e - 112) * 7, sc2 = 1.5;
+        ctx.save(); ctx.translate(kx, G); ctx.scale(sc2 * kids[k][1], sc2); ctx.translate(-kx, -G); KW /= 1.6; KJ /= 1.6;
+        var hb = boy(kx, kx / 12 + k, true, null, false, false, 0); hoop(kx + 58, 28, kx / 28); line(hb.hx - 6, hb.hy + 3, kx + 58 - 24, G - 42, {w: 1.6, jit: .4});
+        ctx.restore(); KW = Math.pow(1 / z, .78); KJ = Math.pow(1 / z, .85);
+      }
+    }
+    ctx.restore(); KW = 1; KJ = 1;
+
+    if (e >= 132) hand('stand by me'.slice(0, e - 131), W / 2 + 8, H - 32, 36, {bold: true});
+    if (e >= 146) hand('un sol por cada edificio', W / 2 + 8, H - 12, 17, {a: .7 * clamp((e - 145) / 3, 0, 1)});
+    hand(String(e - 5), 44, H - 12, 15, {a: .5, align: 'left'});
+  }
+
+  function draw(){
+    var rect = cv.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 3);
+    var pw = Math.max(240, Math.round(rect.width * dpr)), ph = Math.round(pw * H / W);
+    if (cv.width !== pw || cv.height !== ph){ cv.width = pw; cv.height = ph; }
+    ctx.setTransform(pw / W, 0, 0, ph / H, 0, 0);
+    R = rng(frame * 7919 + 13);
+    if (frame < 6) cover(frame); else page(frame);
+  }
+
+  // ---------- controls ----------
+  function setFrame(n, quiet){
+    n = clamp(Math.round(n), 0, TOTAL - 1);
+    if (n === frame && !quiet) return;
+    frame = n; draw();
+    bar.value = n; sceneEl.textContent = sceneName(n); countEl.textContent = 'hoja ' + (n + 1) + ' de ' + TOTAL;
+    if (!quiet){
+      sheen.classList.remove('go'); void sheen.offsetWidth; sheen.classList.add('go');
+      thumb.classList.add('tick'); clearTimeout(setFrame._t); setFrame._t = setTimeout(function(){ thumb.classList.remove('tick'); }, 70);
+    }
+  }
+  function stop(){ if (timer){ clearInterval(timer); timer = null; } playBtn.textContent = frame >= TOTAL - 1 ? 'Ver otra vez' : 'Pasar las hojas'; }
+  function play(){
+    if (timer){ stop(); return; }
+    if (frame >= TOTAL - 1) setFrame(0);
+    playBtn.textContent = 'Parar';
+    timer = setInterval(function(){ if (frame >= TOTAL - 1){ stop(); return; } setFrame(frame + 1); }, 120);
+  }
+  playBtn.addEventListener('click', play);
+  resetBtn.addEventListener('click', function(){ stop(); setFrame(0); playBtn.textContent = 'Pasar las hojas'; });
+  bar.addEventListener('input', function(){ stop(); setFrame(+bar.value); });
+
+  var drag = null;
+  book.addEventListener('pointerdown', function(e){ stop(); drag = {x: e.clientX, y: e.clientY, f: frame}; try{ book.setPointerCapture(e.pointerId); }catch(_){} });
+  book.addEventListener('pointermove', function(e){ if (!drag) return; var d = (drag.y - e.clientY) + (drag.x - e.clientX); setFrame(drag.f + d / 7); });
+  function end(){ drag = null; }
+  book.addEventListener('pointerup', end); book.addEventListener('pointercancel', end);
+
+  var acc = 0;
+  window.addEventListener('wheel', function(e){
+    e.preventDefault(); stop(); acc += e.deltaY;
+    var steps = (acc / 26) | 0; if (steps){ acc -= steps * 26; setFrame(frame + steps); }
+  }, {passive: false});
+  window.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown'){ stop(); setFrame(frame + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp'){ stop(); setFrame(frame - 1); }
+  });
+  window.addEventListener('resize', draw);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+  window.__setFrame = function(n){ setFrame(n, true); };
+  setFrame(0, true);
+})();
+</script>
+</body>
+</html>
