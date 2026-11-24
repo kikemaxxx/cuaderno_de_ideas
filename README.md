@@ -1,4 +1,4 @@
-# Cuaderno de ideas
+# Enrique Mas, cuaderno de trabajo
 
 Sitio estático. Cada idea es una carpeta en `entradas/` y cada folioscopio una carpeta en `folioscopios/`.
 
