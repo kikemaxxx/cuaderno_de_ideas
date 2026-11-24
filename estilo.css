@@ -22,3 +22,5 @@ article ul{padding-left:22px} article li{margin:6px 0}
 .open{font-family:system-ui,-apple-system,sans-serif;font-size:14px;margin:8px 0 0}
 .back{font-family:system-ui,-apple-system,sans-serif;font-size:14px}
 footer{max-width:760px;margin:0 auto;padding:0 22px 40px;color:var(--muted);font-size:14px;font-family:system-ui,-apple-system,sans-serif}
+.fig{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:20px -8px}
+.fig img{display:block;width:100%;height:auto}
