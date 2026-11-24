@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recorrido del huésped · folioscopio · Lista de apertura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --desk:#3a362e; --paper:#f3ecdc; --ink:#1d2a3a; --cream:#efe7d6; --muted:#a59c88; --sun:#e2a93b;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--desk); color:var(--cream);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    min-height:100svh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; padding:20px 16px 26px; overscroll-behavior:none;
+    background-image:radial-gradient(120% 80% at 50% 40%, #4a463c 0%, #36332b 60%, #26231e 100%);
+  }
+  header{text-align:center; line-height:1.15}
+  header .t{font-family:Caveat,cursive; font-size:30px; font-weight:700; letter-spacing:.3px}
+  header .s{font-size:12.5px; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-top:4px}
+  .book{
+    position:relative; width:min(94vw,640px); aspect-ratio:480/340;
+    touch-action:none; cursor:grab; user-select:none; -webkit-user-select:none;
+    margin:4px 0 20px;
+  }
+  .book:active{cursor:grabbing}
+  canvas{
+    position:absolute; inset:0; width:100%; height:100%; display:block;
+    border-radius:2px 7px 7px 2px; background:var(--paper);
+    box-shadow:
+      1.5px 1.5px 0 #e4dcc8, 3px 3px 0 #cfc6b0, 4.5px 4.5px 0 #e4dcc8,
+      6px 6px 0 #cfc6b0, 7.5px 7.5px 0 #e4dcc8, 9px 9px 0 #bdb49e,
+      16px 22px 34px rgba(0,0,0,.55);
+  }
+  .bind{
+    position:absolute; left:0; top:0; bottom:0; width:6.5%;
+    background:linear-gradient(90deg, rgba(29,42,58,.30), rgba(29,42,58,.10) 55%, rgba(29,42,58,0));
+    border-radius:2px 0 0 2px; pointer-events:none;
+  }
+  .bind i{position:absolute; left:28%; width:9%; min-width:3px; height:9%; background:#8d8a84; border-radius:2px; box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+  .bind i:first-child{top:16%} .bind i:last-child{bottom:16%}
+  .sheen{
+    position:absolute; inset:0; pointer-events:none; opacity:0; border-radius:2px 7px 7px 2px;
+    background:linear-gradient(100deg, rgba(255,255,255,0) 40%, rgba(255,255,255,.55) 62%, rgba(29,42,58,.16) 78%, rgba(255,255,255,0) 100%);
+  }
+  .sheen.go{animation:flip .11s ease-out}
+  @keyframes flip{0%{opacity:.9; transform:translateX(14%)}100%{opacity:0; transform:translateX(-30%)}}
+  .thumb{
+    position:absolute; right:-8%; bottom:-21%; width:19%; pointer-events:none;
+    transform-origin:60% 100%; transform:rotate(-16deg); transition:transform .09s ease-out;
+    filter:drop-shadow(3px 5px 6px rgba(0,0,0,.45));
+  }
+  .thumb.tick{transform:rotate(-23deg) translateY(-2%)}
+  .meta{width:min(94vw,640px); padding-right:13%; display:flex; align-items:baseline; justify-content:space-between; gap:12px}
+  .scene{font-family:Caveat,cursive; font-size:25px; font-weight:700; line-height:1.05}
+  .count{font-size:12.5px; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap}
+  input[type=range]{width:min(94vw,640px); accent-color:var(--sun); height:28px; margin:0}
+  .row{display:flex; gap:10px; flex-wrap:wrap; justify-content:center; align-items:center}
+  button, select{
+    font:inherit; font-size:15px; font-weight:600; color:var(--desk); background:var(--sun);
+    border:0; border-radius:999px; padding:11px 20px; cursor:pointer;
+  }
+  button.ghost, select{background:transparent; color:var(--cream); box-shadow:inset 0 0 0 1.5px rgba(239,231,214,.45)}
+  button.step{padding:11px 16px}
+  select{max-width:min(94vw,300px); padding-right:14px}
+  select option{color:#1d2a3a; background:#f3ecdc}
+  button:focus-visible, input:focus-visible, select:focus-visible{outline:2px solid var(--cream); outline-offset:3px}
+  .hint{max-width:min(92vw,540px); text-align:center; font-size:13.5px; line-height:1.45; color:var(--muted); margin:0}
+  .sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+  @media (max-height: 800px){ .book, .meta, input[type=range]{width:min(94vw,560px)} body{gap:11px; padding-top:14px; padding-bottom:16px} }
+  @media (prefers-reduced-motion: reduce){ .sheen.go{animation:none} .thumb{transition:none} }
+</style>
+</head>
+<body>
+  <header>
+    <div class="t">El recorrido del huésped</div>
+    <div class="s">Lista de apertura · folioscopio · 25-11-2026</div>
+  </header>
+
+  <div class="book" id="book" aria-label="Folioscopio. Arrastra para pasar las hojas.">
+    <canvas id="c" width="960" height="680"></canvas>
+    <div class="bind"><i></i><i></i></div>
+    <div class="sheen" id="sheen"></div>
+    <svg class="thumb" id="thumb" viewBox="0 0 120 170" aria-hidden="true">
+      <path d="M30 170 C24 124 14 92 24 58 C31 32 62 26 72 50 C82 78 80 122 92 170 Z" fill="#f6f0e2" stroke="#1d2a3a" stroke-width="2.6" stroke-linejoin="round"/>
+      <path d="M31 66 C35 46 60 43 66 62" fill="none" stroke="#1d2a3a" stroke-width="2" stroke-linecap="round"/>
+      <path d="M40 104 C48 101 58 101 66 104 M42 114 C50 112 58 112 65 114" fill="none" stroke="#1d2a3a" stroke-width="1.4" stroke-linecap="round" opacity=".55"/>
+    </svg>
+  </div>
+
+  <div class="meta">
+    <div class="scene" id="scene">Portada</div>
+    <div class="count" id="count">hoja 1</div>
+  </div>
+  <input type="range" id="bar" min="0" max="1" value="0" step="1" aria-label="Pasar las hojas">
+  <div class="row">
+    <button id="prev" class="ghost step" aria-label="Hoja anterior">‹</button>
+    <button id="play">Pasar las hojas</button>
+    <button id="next" class="ghost step" aria-label="Hoja siguiente">›</button>
+    <select id="jump" aria-label="Ir a un apartado"></select>
+  </div>
+  <p class="hint">Cada hoja es una pregunta de la lista y lo que obliga a hacer. Pasa las hojas deprisa para ver el viaje del huésped, o párate en una para leerla: arrastra el dedo sobre el librito, mueve la barra o usa las flechas.</p>
+  <div class="sr" id="sr" aria-live="polite"></div>
+
+<script>
+(function(){
+  var W = 480, H = 340, GY = 112, KW = 1, KJ = 1;
+  var INK = '#1d2a3a', SUN = '#e2a93b', SUND = '#a8761a', RED = '#c8452f', GREEN = '#3f7d4e', BLUE = '#3f7fa8', PAPER = '#f3ecdc';
+  var cv = document.getElementById('c'), ctx = cv.getContext('2d');
+  var book = document.getElementById('book'), sheen = document.getElementById('sheen'), thumb = document.getElementById('thumb');
+  var bar = document.getElementById('bar'), sceneEl = document.getElementById('scene'), countEl = document.getElementById('count');
+  var playBtn = document.getElementById('play'), jump = document.getElementById('jump'), sr = document.getElementById('sr');
+  var frame = 0, timer = null, R = Math.random;
+
+  // =====================================================================
+  // EL CONTENIDO: la lista de comprobación, tal cual
+  // fila = [pregunta, qué obliga a hacer, responsabilidad, marca]
+  // marca: 'x' sin resolver · 'ok' revisado por Enrique · 'p' proceso fijado
+  // =====================================================================
+  var DOC = [
+    { part: 'La llegada', status: 'Pasos 0 a 9 · revisada por Enrique', secs: [
+      { t: 'Paso 0 · Antes de salir de viaje', sc: 'home', note: 'Proceso fijado por Enrique, y las preguntas que deja abiertas en la puerta.', rows: [
+        ['Avisos', 'Correo al reservar, recordatorios en los días siguientes y más canales cuando faltan pocas horas. Las reservas entran por Booking, Airbnb o la web.', '', 'p'],
+        ['La condición', 'Tasas turísticas pagadas y pasaportes de todos los viajeros subidos. Cumplida, se pueden compartir los códigos de acceso.', '', 'p'],
+        ['Quién reserva no importa', 'El proceso se hace igual, sea quien sea el que duerme.', '', 'p'],
+        ['El código es automático y programable', 'Por defecto llega el mismo día de la llegada; se puede adelantar para quien lo pida.', '', 'p'],
+        ['Sin reserva no se entra', 'En la entrada, muy visible y repetido, un cartel con enlace o QR para reservar.', '', 'p'],
+        ['¿Puede hacerse todo el proceso en la puerta?', 'Reserva, tasas y pasaportes desde el móvil, de pie y en pocos minutos'],
+        ['¿Hay conexión en la entrada?', 'Wifi abierto en la puerta, limitado a ese trámite'],
+        ['¿Hay luz en la entrada para fotografiar un pasaporte de noche?', 'Iluminación en la puerta'],
+        ['¿Qué ofrece el QR de la puerta?', 'Dos caminos: «quiero reservar» y «tengo reserva y no encuentro mi código»']
+      ]},
+      { t: 'Paso 1 · El último tramo hasta el hotel', sc: 'road', note: 'Casi todo son comprobaciones de apertura: alguien del equipo lo verifica antes de abrir y firma que está hecho.', rows: [
+        ['¿El punto del mapa lleva a la entrada correcta?', 'Corregirlo en Google Maps y en los portales'],
+        ['¿El nombre coincide en los portales y en el rótulo?', 'Unificarlo'],
+        ['¿El rótulo se ve de noche?', 'Rótulo iluminado y foto de la fachada de noche en el mensaje'],
+        ['¿El acceso depende del sentido de la marcha?', 'Explicar el cambio de sentido con vídeo o fotos'],
+        ['¿Hay edificios o portales parecidos?', 'Foto del portal y señal propia'],
+        ['¿Hay cobertura en el último tramo?', 'Instrucciones que se puedan guardar o ver sin conexión'],
+        ['¿Cómo llega quien no viene en coche (taxi, autobús, a pie)?', 'Instrucciones para cada forma de llegar']
+      ]},
+      { t: 'Aparcar', sc: 'park', rows: [
+        ['¿Tiene aparcamiento propio?', 'Sí: anunciarlo en el anuncio y en los mensajes, con plano y foto. No: indicar los más cercanos', 'Nuestra si es propio; si no, solo informar'],
+        ['¿Qué vehículos caben?', 'Publicar límites de altura y longitud antes de la reserva', 'Nuestra'],
+        ['¿Hay barrera o puerta de garaje?', 'Incluir su apertura en el mensaje de llegada, con plan B', 'Nuestra'],
+        ['¿Hay plaza para todas las habitaciones?', 'Si no: reserva de plaza o aviso de disponibilidad, más alternativa', 'Nuestra'],
+        ['¿Se puede parar delante para descargar?', 'Indicar dónde y cuánto tiempo', 'Solo informar'],
+        ['¿El aparcamiento público cercano cierra de noche?', 'Dar horario, precio y si deja salir a cualquier hora', 'Solo informar'],
+        ['¿Hay carga para coche eléctrico?', 'Propia o la más cercana', 'Según el caso'],
+        ['¿Está vigilado o iluminado?', 'Decir con claridad qué se ofrece y qué no', 'Nuestra si es propio']
+      ]},
+      { t: 'Del vehículo a la puerta', sc: 'walk', rows: [
+        ['¿Cuántas puertas tiene el edificio y cuál usa el huésped?', 'Señal en la puerta y foto en el mensaje'],
+        ['¿El portal se comparte con vecinos?', 'Rotulación propia e instrucción de no usar los timbres'],
+        ['¿Hay escalones hasta la puerta?', 'Ruta accesible señalada, o aviso antes de la reserva'],
+        ['¿El recorrido está iluminado de noche?', 'Luz con sensor'],
+        ['¿La puerta tiene techo?', 'Si no, que el trámite en la puerta sea mínimo']
+      ]},
+      { t: 'Tener el código', sc: 'code', rows: [
+        ['¿Por cuántos canales llega?', 'Dos como mínimo'],
+        ['¿Puede recuperarlo solo en la puerta?', 'QR con «tengo reserva y no encuentro mi código»'],
+        ['¿Hay cobertura o wifi en la puerta?', 'Si no, wifi abierto limitado a ese trámite'],
+        ['¿Cuántos códigos distintos necesita (garaje, portal, habitación)?', 'Reducirlos a uno si se puede'],
+        ['¿Desde y hasta qué hora vale?', 'Que siga valiendo si llega pasada la medianoche'],
+        ['¿Qué ve quien no completó tasas y pasaportes?', 'Un mensaje que diga qué le falta y cómo hacerlo ahí mismo']
+      ]},
+      { t: 'Abrir la puerta', sc: 'open', rows: [
+        ['¿Se entiende el teclado sin leer?', 'Pictogramas junto a la cerradura y foto en el mensaje'],
+        ['¿Se ve de noche?', 'Teclado iluminado'],
+        ['¿Abre sin internet y avisa de pila baja?', 'Exigirlo al elegir cerradura'],
+        ['¿Hay una segunda forma de abrir?', 'Apertura remota o llave de emergencia'],
+        ['¿Quién acude si nada funciona, y en cuánto tiempo?', 'Nombre, teléfono y plazo, escritos'],
+        ['¿La puerta se cierra sola al entrar?', 'Comprobarlo: afecta a la seguridad de todos']
+      ]},
+      { t: 'De la entrada a la habitación', sc: 'stairs', rows: [
+        ['¿Cómo se numeran las plantas y las habitaciones?', 'Explicar entresuelo y planta baja con foto; número y flecha en cada planta'],
+        ['¿Hay ascensor?', 'Señalarlo. Si no hay, avisar antes de la reserva en las plantas altas'],
+        ['¿Hay un recorrido sin escalones hasta alguna habitación?', 'Identificar las habitaciones accesibles y decirlo en el anuncio'],
+        ['¿Hay puntos donde se puede dudar (dos escaleras, alas, otro edificio)?', 'Una señal en cada punto de duda y secuencia de fotos'],
+        ['¿Los pasillos se iluminan solos?', 'Luz con sensor'],
+        ['¿Hay puertas que el huésped no debe abrir?', 'Cerradas y rotuladas'],
+        ['¿Se molesta a otros huéspedes al pasar de noche?', 'Puertas de cierre suave y aviso de silencio con pictograma']
+      ]},
+      { t: 'Abrir la habitación', sc: 'roomdoor', rows: [
+        ['¿El número de la puerta se ve sin duda?', 'Número grande e iluminado'],
+        ['¿Usa el mismo código que la entrada?', 'Unificarlo si se puede'],
+        ['¿Qué pasa si la habitación no está lista?', 'No entregar el código hasta que limpieza la marque lista; reasignar otra de forma automática'],
+        ['¿Puede abrir otra habitación por error?', 'El código solo abre la suya'],
+        ['¿Qué pasa si sale sin móvil y no recuerda el código?', 'Código corto y fácil de recordar, o recuperación en la puerta'],
+        ['¿Puede cerrarse por dentro?', 'Pestillo, y que la apertura de emergencia lo supere']
+      ]},
+      { t: 'Los primeros cinco minutos dentro', sc: 'room', rows: [
+        ['¿Se enciende la luz sin buscar?', 'Luz al entrar; sin tarjetero de corriente, o bien explicado'],
+        ['¿Cómo se enciende y se regula el clima?', 'Mando o termostato con pictogramas; habitación climatizada antes de la llegada'],
+        ['¿El clima se apaga solo con la ventana abierta o al salir?', 'Explicarlo, para que no crea que está averiado'],
+        ['¿Cuánto tarda el agua caliente y hacia qué lado sale?', 'Indicarlo en el baño'],
+        ['¿Se puede beber el agua del grifo?', 'Decirlo; los extranjeros lo preguntan'],
+        ['¿Cómo se conecta al wifi?', 'QR en la habitación, sin registros'],
+        ['¿Sus enchufes sirven?', 'Tomas USB o adaptador disponible'],
+        ['¿Cómo funcionan persianas y ventanas?', 'Pictograma si no es evidente'],
+        ['¿Qué aparatos hay (televisor, nevera, cafetera, cocina, lavadora)?', 'Cada aparato con su ficha y un QR pegado que lleva a la explicación gráfica'],
+        ['¿Dónde hay manta, almohada y toallas de más?', 'Indicarlo'],
+        ['¿Qué normas hay (fumar, silencio, basura, hora de salida)?', 'Pictogramas, pocas y visibles'],
+        ['¿Qué hace si algo está sucio o roto?', 'Aviso con foto por el mismo canal de ayuda'],
+        ['¿Sabe salir en una emergencia?', 'Plano de evacuación y dirección exacta del hotel a la vista']
+      ]},
+      { t: 'Pedir ayuda', sc: 'help', rows: [
+        ['¿Sabe a quién preguntar?', 'Un solo contacto, visible en la puerta, en la habitación y en cada mensaje'],
+        ['¿Puede pedir ayuda sin datos móviles?', 'Wifi en todo el edificio'],
+        ['¿Puede pedir ayuda sin móvil o sin batería?', 'Un punto físico: interfono o teléfono en la entrada'],
+        ['¿En qué idiomas responde el asistente?', 'Definir la lista y qué pasa con los demás'],
+        ['¿Qué resuelve el asistente solo?', 'Lista cerrada: reenviar código, wifi, uso de aparatos, temperatura, hora de salida'],
+        ['¿Cuándo pasa a una persona, y a quién?', 'Reglas escritas, con plazo de respuesta de día y de noche'],
+        ['¿Qué hace ante una emergencia médica o un incendio?', 'Dar el 112 de inmediato y avisar al responsable'],
+        ['¿Queda registrado?', 'Cada incidencia se guarda y alimenta la lista de mejoras']
+      ]}
+    ]},
+    { part: 'La estancia', draft: 1, status: 'Borrador del 25-11-2026 · pendiente de revisar por Enrique', intro: 'A partir del segundo día el huésped ya sabe entrar; lo que falla ahora es lo que dura: la limpieza, los vecinos de habitación, los aparatos y las averías.', secs: [
+      { t: 'El segundo día', sc: 'day2', rows: [
+        ['¿El código vale todos los días de la estancia?', 'Vigencia ligada a la reserva en el PMS, hasta la hora de salida'],
+        ['¿Puede alargar la estancia sin hablar con nadie?', 'Prórroga y pago desde el móvil; el código se alarga solo. Si su habitación está vendida, se le propone otra'],
+        ['¿Qué pasa si cambia de habitación a mitad de estancia?', 'Código nuevo, anulación del anterior y aviso a limpieza, todo automático'],
+        ['¿Se suma otra persona a mitad de estancia?', 'Mismo trámite de pasaporte y tasa que al reservar; aforo máximo por habitación'],
+        ['¿La puerta queda cerrada cuando sale?', 'Cerradura que cierra sola y aviso de puerta abierta'],
+        ['¿Sabe dónde comer, comprar o encontrar una farmacia?', 'Guía del entorno con mapa y horarios. En carretera y campo: qué hay abierto de noche y a qué distancia'],
+        ['¿Sabe cómo moverse sin coche?', 'Taxi, autobús y horarios; en campo, si hay que reservarlo la víspera']
+      ]},
+      { t: 'Limpieza durante la estancia', sc: 'clean', rows: [
+        ['¿Se limpia durante la estancia, y cada cuánto?', 'Decidirlo y decirlo antes de la reserva'],
+        ['¿Cómo pide o rechaza la limpieza el huésped?', 'Un mensaje o un colgador; el aviso llega a limpieza sin pasar por una persona'],
+        ['¿Cómo sabe limpieza que la habitación está vacía?', 'Llamar siempre, señal de «no molestar» y no entrar nunca con el pestillo echado'],
+        ['¿Sabe el huésped que alguien va a entrar?', 'Aviso previo con franja horaria'],
+        ['¿Queda registrado quién entró y cuándo?', 'Un código propio por cada persona de limpieza y registro de aperturas'],
+        ['¿Qué pasa cuando se acaban toallas, papel, jabón o café?', 'Reposición a petición, o un armario de repuestos que abre con su código'],
+        ['¿Dónde deja la basura en una estancia larga?', 'Punto indicado con pictograma'],
+        ['¿Dónde guarda lo de valor mientras se limpia?', 'Caja fuerte, o decir con claridad que no hay'],
+        ['¿Cómo se comprueba que quedó limpia?', 'Lista por habitación y foto al terminar']
+      ]},
+      { t: 'Ruido y convivencia', sc: 'noise', rows: [
+        ['¿Cómo sabemos que hay ruido en una habitación?', 'Sensor que mide el nivel y no graba, declarado antes de la reserva'],
+        ['¿Qué pasa cuando salta el sensor?', 'Escalera escrita con plazos: aviso automático, segundo aviso, llamada, persona que acude'],
+        ['¿A quién avisa el huésped molesto a las 3 de la mañana?', 'El mismo canal de ayuda, con plazo de respuesta de noche'],
+        ['¿Hay más gente dentro que la registrada?', 'Aforo en las condiciones de reserva; cámara en la entrada o recuento de aperturas'],
+        ['¿Se fuma dentro?', 'Sensor de humo o vapeo y penalización publicada antes de la reserva'],
+        ['¿Quién puede echar a un huésped, y cómo?', 'Sin resolver (Enrique, 25-11-2026). Falta decidir quién decide, quién acude, cuándo se llama a la policía y cuándo se anula el código', '', 'x'],
+        ['¿A quién se quejan los vecinos del edificio?', 'Un teléfono para vecinos y registro de cada queja'],
+        ['¿El ruido viene de fuera (carretera, bar, campanas)?', 'Avisarlo antes de la reserva; tapones en la habitación']
+      ]},
+      { t: 'Lavadora, cocina y aparatos de uso largo', sc: 'washer', rows: [
+        ['¿Se entiende la lavadora sin leer?', 'Ficha con fotos y un solo programa recomendado, marcado en el propio aparato'],
+        ['¿Hay detergente?', 'Dosis incluida o a la venta, y foto de dónde se echa'],
+        ['¿Por qué no se abre la puerta al terminar?', 'Explicar el bloqueo de un par de minutos: es el fallo habitual de la ficha'],
+        ['¿Dónde se seca la ropa?', 'Secadora o tendedero, y dónde no se puede tender'],
+        ['¿Qué pasa si hay una fuga?', 'Sensor de fuga con corte automático; llave de corte localizada y fotografiada'],
+        ['¿Salta la luz con varios aparatos a la vez?', 'Potencia por habitación comprobada; rearme a distancia o cuadro accesible y explicado'],
+        ['¿Puede quedarse la placa encendida?', 'Corte automático por tiempo y detector de humo'],
+        ['¿Qué pasa con lo que deja en la nevera o en la cocina?', 'Limpieza lo retira a la salida; norma visible']
+      ]},
+      { t: 'Averías', sc: 'fault', rows: [
+        ['¿Cómo avisa el huésped?', 'El mismo canal de ayuda, con foto; el QR del aparato dice cuál es'],
+        ['¿Qué resuelve el asistente con la ficha?', 'Lista de fallos habituales y su solución, por aparato'],
+        ['¿Qué se arregla a distancia?', 'Rearme eléctrico, reinicio del router, clima, apertura de puerta: exigirlo al elegir cada equipo'],
+        ['¿Nos enteramos antes que el huésped?', 'Sensores con aviso y comprobación de la habitación antes de cada llegada'],
+        ['¿Qué averías no pueden esperar a mañana?', 'Lista cerrada con plazo: sin agua, sin luz, sin clima con frío o calor extremos, cerradura, fuga, único inodoro atascado'],
+        ['¿Quién acude, de día, de noche y en festivo?', 'Proveedor y segundo proveedor por oficio, con plazo contratado'],
+        ['¿Cómo entra el técnico?', 'Código temporal y registrado. Para entrar sin el huésped dentro, se le pide permiso antes por el chat', '', 'ok'],
+        ['¿Y si no se arregla hoy?', 'Habitación de reserva o realojo; compensación fijada de antemano y quién la autoriza'],
+        ['¿Se deja de vender la habitación averiada?', 'Bloqueo automático en el PMS hasta que mantenimiento la libere'],
+        ['¿Qué pasa en una avería general (luz, agua, internet)?', 'Saber qué sigue funcionando: cerraduras, alumbrado de emergencia, canal de ayuda. Mensaje a todos los huéspedes'],
+        ['¿Quién paga lo que rompe el huésped?', 'Fotos de antes y de después, y cargo o fianza según condiciones publicadas'],
+        ['¿Qué se hace ante una plaga (chinches, cucarachas)?', 'Protocolo: bloquear la habitación, realojar, empresa de control contratada de antemano', '', 'ok']
+      ]}
+    ]},
+    { part: 'La salida', draft: 1, status: 'Borrador del 25-11-2026 · pendiente de revisar por Enrique', intro: 'Sin recepción, nadie ve irse al huésped: el hotel tiene que enterarse solo de que la habitación está libre.', secs: [
+      { t: 'Antes de irse', sc: 'before', rows: [
+        ['¿Sabe a qué hora tiene que salir?', 'Recordatorio la víspera y esa mañana, con pictograma en la habitación'],
+        ['¿Puede salir más tarde?', 'Oferta automática si el PMS dice que no hay llegada; pago desde el móvil y el código se alarga'],
+        ['¿Dónde deja el equipaje si su viaje sale por la tarde?', 'Consigna con código'],
+        ['¿Qué tiene que hacer antes de irse?', 'Lista mínima y gráfica: ventanas, basura, mandos en su sitio. No pedirle que limpie'],
+        ['¿Queda algo por pagar?', 'Cobro automático antes de la salida, con la tarjeta de la reserva'],
+        ['¿Necesita factura?', 'Factura automática por correo; los datos fiscales se piden antes, no en la puerta'],
+        ['¿Cómo se va de madrugada sin coche?', 'Teléfonos de taxi y aviso de reservarlo la víspera, sobre todo en carretera y campo']
+      ]},
+      { t: 'Irse', sc: 'leave', rows: [
+        ['¿Cómo sabemos que se ha ido?', 'Por la hora de salida: el código caduca y, una vez fuera, ya no puede volver a entrar'],
+        ['¿Cómo sabemos que no sigue dentro?', 'Sensor de presencia por radar en cada habitación, que detecta también a quien duerme (el de movimiento normal no). Se suma el pestillo interior y el registro de la cerradura, y la cámara del pasillo como comprobación en caso de duda. Aprobado por Enrique el 25-11-2026', '', 'ok'],
+        ['¿Qué pasa a la hora de salida?', 'Si el sensor dice «vacía», se avisa a limpieza. Si dice «hay alguien», limpieza no entra, el huésped recibe un mensaje y empieza el caso del que no se va'],
+        ['¿Puede el sensor equivocarse?', 'Probarlo en cada habitación al abrir: que cubra la cama, que no detecte el pasillo a través del tabique y qué hace con mascotas, ventiladores y cortinas. La cámara del pasillo resuelve la duda'],
+        ['¿Sabe el huésped que hay un sensor de presencia en la habitación?', 'Declararlo antes de la reserva (no graba imagen ni sonido) y confirmarlo con quien lleve protección de datos'],
+        ['¿Cuándo deja de valer el código?', 'A la hora de salida'],
+        ['¿Y si vuelve porque olvidó algo?', 'Petición por el canal de ayuda y apertura puntual, registrada'],
+        ['¿Y si no se va?', 'Sin resolver (Enrique, 25-11-2026): es el mismo caso que echar a un huésped. Mientras tanto, el siguiente huésped no recibe código hasta que la habitación esté lista', '', 'x'],
+        ['¿Puede sacar el coche con el código ya caducado?', 'La barrera siempre abre para salir'],
+        ['¿Tiene que devolver algo físico?', 'Mejor no entregar nada; si hay mando o llave, buzón de devolución'],
+        ['¿Cómo queda la habitación al cerrarse?', 'Clima y luces a modo vacío de forma automática; aviso si queda una ventana abierta']
+      ]},
+      { t: 'Después de la salida', sc: 'after', rows: [
+        ['¿Quién revisa la habitación, y cuándo?', 'Limpieza, con lista y fotos de daños, faltas y objetos olvidados, antes de la siguiente llegada'],
+        ['¿Hay tiempo de limpiar entre una salida y una llegada?', 'Margen fijado; si no llega, se retrasa el código del siguiente y se le avisa'],
+        ['¿Qué pasa con lo que olvida?', 'Foto, aviso al huésped, custodia con plazo y envío a su cargo'],
+        ['¿Qué pasa si hay daños o se ha fumado?', 'Fotos con hora y cargo según condiciones, dentro del plazo de reclamación de cada portal'],
+        ['¿Se devuelve la fianza sola?', 'Devolución automática si limpieza no marca nada'],
+        ['¿Se le pide opinión?', 'Mensaje tras la salida, con una pregunta privada antes de la reseña pública; lo que diga alimenta la lista de mejoras'],
+        ['¿Qué se hace con sus datos?', 'Códigos anulados; pasaportes guardados solo el plazo legal y borrados después', '', 'ok'],
+        ['¿Cómo vuelve?', 'Oferta de reserva directa para la próxima vez']
+      ]}
+    ]},
+    { part: 'Zonas comunes', status: 'Revisadas por Enrique', intro: 'Son donde más se nota que no hay nadie: en una habitación el huésped cuida lo suyo, y en una zona común nadie se siente responsable.', secs: [
+      { t: 'Preguntas para cualquier zona común', sc: 'common', rows: [
+        ['¿Qué zonas comunes hay y cuáles puede usar el huésped?', 'Inventario y plano, con fotos de cada una'],
+        ['¿Tiene horario?', 'Cerradura que abre solo en ese horario, y cartel con pictograma'],
+        ['¿Quién puede entrar?', 'Acceso solo con el código del huésped; decidir qué pasa con visitas no registradas'],
+        ['¿Qué aparatos hay y cómo se usan?', 'Ficha por aparato y QR pegado con la explicación gráfica'],
+        ['¿Algo se paga?', 'Pago sin efectivo, y plan B si la máquina falla'],
+        ['¿Quién limpia y repone, y cada cuánto?', 'Frecuencia fijada y comprobación con foto'],
+        ['¿Cómo sabemos que está sucia o desordenada entre limpiezas?', 'Aviso del huésped con foto, o revisión por cámara'],
+        ['¿Luz y clima se apagan solos?', 'Sensor de presencia'],
+        ['¿Puede haber ruido de noche?', 'Horario, sensor de ruido y aviso automático'],
+        ['¿Hay cámaras?', 'Solo en zonas comunes, señalizadas y conforme a la normativa de protección de datos'],
+        ['¿Hay algún riesgo físico?', 'Medida de seguridad propia de cada zona (apartado siguiente)'],
+        ['¿Qué pasa con lo que se deja olvidado?', 'Procedimiento de objetos perdidos']
+      ]},
+      { t: 'Lo propio de cada zona', sc: 'zones', zone: 1, after: 'Dos casos de esta lista salen de pensar mal y suelen olvidarse: los repartidores en la puerta y las visitas que el huésped mete sin registrar. En un hotel sin personal, los dos son personas dentro del edificio que nadie ha identificado.', rows: [
+        ['Vestíbulo sin recepción', 'Qué encuentra el huésped al entrar: punto de ayuda, plano, normas. Que no parezca abandonado'],
+        ['Consigna de equipaje', 'Taquillas con código para quien llega antes de hora o sale más tarde'],
+        ['Desayuno o comedor', 'Quién repone, cómo se conserva la comida, qué se hace con las sobras'],
+        ['Cocina compartida', 'Placas con corte automático, detector de humo, menaje que desaparece'],
+        ['Máquinas de venta y café', 'Reposición, averías, devolución del dinero'],
+        ['Lavandería de autoservicio', 'Instrucciones gráficas, pago, ropa olvidada, fugas de agua'],
+        ['Ascensor', 'Contrato de mantenimiento y rescate, teléfono de emergencia operativo'],
+        ['Pasillos y escaleras', 'Luz con sensor, alumbrado de emergencia, nada que obstruya'],
+        ['Terraza, jardín o patio', 'Horario, ruido hacia los vecinos, mobiliario'],
+        ['Piscina', 'Normativa de socorrista y de control del agua, que cambia según la comunidad y hay que consultar en cada caso'],
+        ['Gimnasio', 'Uso bajo responsabilidad del huésped, máquinas revisadas'],
+        ['Zona de fumadores', 'Dónde sí, para que no sea en la habitación'],
+        ['Basuras', 'Dónde deja el huésped la suya y quién la saca'],
+        ['Entrada de repartidores', 'Paquetes y comida a domicilio: dónde se entregan sin dar acceso al edificio'],
+        ['Cuartos técnicos y de limpieza', 'Cerrados siempre, con acceso solo para proveedores']
+      ]}
+    ]},
+    { part: 'Pendiente', status: 'Lo que queda por cerrar', secs: [
+      { t: 'Pendiente', sc: 'pending', plain: 1, rows: [
+        ['Echar a un huésped y el huésped que no se va', 'Sin resolver. Son el mismo caso. Enrique lo dejó abierto el 25-11-2026.', '', 'x'],
+        ['Que Enrique revise el resto de la estancia y la salida', 'Borrador del 25-11-2026. Ya revisados por él: saber que se ha ido, entrada del técnico, plagas y datos tras la salida.'],
+        ['Asignar responsable a cada punto', 'Cada respuesta obliga a hacer algo, y todavía no tiene dueño.']
+      ]}
+    ]}
+  ];
+  var INTRO = [
+    ['Estado a 25-11-2026', 'Hecha la llegada (pasos 0 a 9) y las zonas comunes, revisadas por Enrique. La estancia y la salida están en borrador, sin revisar por Enrique.'],
+    ['Cómo se usa', 'Cada punto es una pregunta que el equipo de aperturas responde al estudiar o visitar un hotel nuevo, sin saber de antemano cómo es (carretera, ciudad o campo). Cada respuesta obliga a hacer algo. Falta asignar un responsable a cada punto.'],
+    ['Límite conocido', 'La experiencia directa de la empresa es urbana (un hotel con recepción y un edificio automatizado en ciudad). Los puntos de carretera y campo son hipótesis sin probar sobre el terreno.']
+  ];
+
+  // ---------- hojas: una por pregunta ----------
+  var SHEETS = [{k: 'cover', name: 'Portada'}], MARKS = [], NQ = 0;
+  INTRO.forEach(function(n){ SHEETS.push({k: 'intro', name: n[0], q: n[0], a: n[1]}); });
+  DOC.forEach(function(P){
+    var single = P.secs.length === 1 && P.secs[0].plain;
+    SHEETS.push({k: 'part', name: P.part, P: P});
+    MARKS.push({i: SHEETS.length - 1, label: '— ' + P.part + ' —'});
+    P.secs.forEach(function(S){
+      if (!single){
+        SHEETS.push({k: 'sec', name: S.t, P: P, S: S});
+        MARKS.push({i: SHEETS.length - 1, label: S.t});
+      }
+      S.rows.forEach(function(r, i){
+        if (!S.plain && r[3] !== 'p' && !S.zone) NQ++;
+        SHEETS.push({k: 'row', name: S.t, P: P, S: S, r: r, i: i});
+      });
+      if (S.after) SHEETS.push({k: 'after', name: S.t, P: P, S: S, a: S.after});
+    });
+  });
+  var TOTAL = SHEETS.length;
+
+  // ---------- helpers de trazo (misma mano que los otros folioscopios) ----------
+  function rng(seed){ var a = seed >>> 0; return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function j(a){ return (R() - 0.5) * 2 * a; }
+  function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+  function lerp(a, b, t){ return a + (b - a) * clamp(t, 0, 1); }
+  function ease(t){ t = clamp(t, 0, 1); return t * t * (3 - 2 * t); }
+  function seg(x1, y1, x2, y2){
+    var d = Math.hypot(x2 - x1, y2 - y1), n = Math.max(1, Math.round(d / 16)), p = [];
+    for (var i = 0; i <= n; i++) p.push([x1 + (x2 - x1) * i / n, y1 + (y2 - y1) * i / n]);
+    return p;
+  }
+  function poly(pts){
+    var out = [];
+    for (var i = 0; i < pts.length - 1; i++){ var s = seg(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1]); if (i) s.shift(); out = out.concat(s); }
+    return out;
+  }
+  function arc(cx, cy, r, a0, a1){
+    var n = Math.max(8, Math.round(Math.abs(a1 - a0) * r / 5)), p = [];
+    for (var i = 0; i <= n; i++){ var a = a0 + (a1 - a0) * i / n; p.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]); }
+    return p;
+  }
+  function stroke(pts, o){
+    o = o || {};
+    var jit = (o.jit == null ? 0.6 : o.jit) * KJ;
+    ctx.save();
+    ctx.globalAlpha *= o.a == null ? 1 : o.a;
+    ctx.strokeStyle = o.c || INK; ctx.lineWidth = (o.w || 1.35) * KW; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (var i = 0; i < pts.length; i++){ var x = pts[i][0] + j(jit), y = pts[i][1] + j(jit); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }
+    ctx.stroke(); ctx.restore();
+  }
+  function line(x1, y1, x2, y2, o){ stroke(seg(x1, y1, x2, y2), o); }
+  function ring(cx, cy, r, o){ var s = R() * 6.28; stroke(arc(cx, cy, r, s, s + 6.28 + 0.3), o); }
+  function box(x, y, w, h){ return poly([[x, y + h], [x, y], [x + w, y], [x + w, y + h], [x, y + h]]); }
+  function rect(x, y, w, h, o){ stroke(box(x, y, w, h), o); }
+  function fillPoly(pts, col, al){ ctx.save(); ctx.globalAlpha = al == null ? 1 : al; ctx.fillStyle = col; ctx.beginPath(); pts.forEach(function(P, q){ if (q) ctx.lineTo(P[0], P[1]); else ctx.moveTo(P[0], P[1]); }); ctx.closePath(); ctx.fill(); ctx.restore(); }
+  function fillBox(x, y, w, h, col, al){ fillPoly([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], col, al); }
+  function disc(x, y, r, col, al){ ctx.save(); ctx.globalAlpha = al == null ? 1 : al; ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.3); ctx.fill(); ctx.restore(); }
+  function halo(x, y, r, col, al){ if (al <= 0 || r <= 0) return; var g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(226,169,59,0)'); ctx.save(); ctx.globalAlpha = al; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.3); ctx.fill(); ctx.restore(); }
+  function font(size, bold){ return (bold ? '700 ' : '500 ') + size + 'px Caveat, "Segoe Print", "Comic Sans MS", cursive'; }
+  function hand(txt, x, y, size, o){
+    o = o || {};
+    ctx.save(); ctx.globalAlpha = o.a == null ? 1 : o.a; ctx.fillStyle = o.c || INK;
+    ctx.font = font(size, o.bold);
+    ctx.textAlign = o.align || 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.translate(x + j(.4), y + j(.4)); ctx.rotate((o.rot || 0) + j(.004)); ctx.fillText(txt, 0, 0); ctx.restore();
+  }
+  function wrap(txt, size, bold, maxW){
+    ctx.save(); ctx.font = font(size, bold);
+    var words = String(txt).split(' '), lines = [], cur = '';
+    for (var i = 0; i < words.length; i++){
+      var tryL = cur ? cur + ' ' + words[i] : words[i];
+      if (cur && ctx.measureText(tryL).width > maxW){ lines.push(cur); cur = words[i]; } else cur = tryL;
+    }
+    if (cur) lines.push(cur);
+    ctx.restore(); return lines;
+  }
+  function para(lines, x, y, size, lh, o){ for (var i = 0; i < lines.length; i++) hand(lines[i], x, y + i * lh, size, o); return y + lines.length * lh; }
+
+  // grano del papel, hecho una vez
+  var grain = document.createElement('canvas'); grain.width = 260; grain.height = 190;
+  (function(){
+    var g = grain.getContext('2d'), r = rng(4242);
+    for (var i = 0; i < 5200; i++){
+      g.fillStyle = r() > .5 ? 'rgba(120,96,58,' + (r() * .10).toFixed(3) + ')' : 'rgba(255,255,255,' + (r() * .16).toFixed(3) + ')';
+      g.fillRect(r() * 260, r() * 190, 1 + r() * 1.6, 1 + r() * 1.2);
+    }
+    for (var k = 0; k < 26; k++){
+      g.strokeStyle = 'rgba(110,88,52,' + (.05 + r() * .07).toFixed(3) + ')'; g.lineWidth = .6;
+      var x = r() * 260, y = r() * 190; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (r() - .5) * 22, y + (r() - .5) * 10); g.stroke();
+    }
+  })();
+  function paper(f){
+    ctx.fillStyle = PAPER; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.globalAlpha = .5;
+    ctx.drawImage(grain, -((f * 37) % 50), -((f * 23) % 36), 560, 410);
+    ctx.restore();
+    var g = ctx.createLinearGradient(0, 0, W, 0);
+    g.addColorStop(0, 'rgba(60,45,20,.12)'); g.addColorStop(.12, 'rgba(60,45,20,0)'); g.addColorStop(.9, 'rgba(60,45,20,0)'); g.addColorStop(1, 'rgba(60,45,20,.08)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
+
+  // ---------- piezas del dibujo ----------
+  function ground(){ line(44, GY, 466, GY, {w: 1.2, a: .55}); }
+  function person(x, gy, e, o){
+    o = o || {};
+    var s = o.still ? 0 : Math.sin(e * 1.7) * 5, d = o.dir || 1;
+    ring(x, gy - 33, 5, {w: 1.4, jit: .3});
+    line(x, gy - 28, x, gy - 13, {w: 1.5});
+    line(x, gy - 13, x - 2 - s, gy, {w: 1.4}); line(x, gy - 13, x + 2 + s, gy, {w: 1.4});
+    line(x, gy - 24, x - 6 + s * .6, gy - 15, {w: 1.3}); line(x, gy - 24, x + 6 - s * .4, gy - 16, {w: 1.3});
+    if (o.bag){ var bx = d > 0 ? x + 7 : x - 16; fillBox(bx, gy - 11, 9, 11, SUN, .55); rect(bx, gy - 11, 9, 11, {w: 1.2, jit: .3}); line(bx + 4.5, gy - 11, bx + 4.5, gy - 16, {w: 1}); }
+  }
+  function car(x, gy){
+    stroke(poly([[x, gy - 5], [x, gy - 13], [x + 8, gy - 14], [x + 13, gy - 22], [x + 30, gy - 22], [x + 36, gy - 14], [x + 46, gy - 12], [x + 46, gy - 5], [x, gy - 5]]), {w: 1.4});
+    line(x + 21, gy - 22, x + 21, gy - 14, {w: 1, a: .6});
+    fillPoly(arc(x + 10, gy - 4, 4.2, 0, 6.3), PAPER, 1); ring(x + 10, gy - 4, 4.2, {w: 1.4, jit: .3});
+    fillPoly(arc(x + 36, gy - 4, 4.2, 0, 6.3), PAPER, 1); ring(x + 36, gy - 4, 4.2, {w: 1.4, jit: .3});
+    disc(x + 45, gy - 10, 1.6, SUN, 1);
+  }
+  function house(x, gy, w, h){
+    rect(x, gy - h, w, h); stroke(poly([[x - 5, gy - h], [x + w / 2, gy - h - 16], [x + w + 5, gy - h]]));
+    rect(x + w / 2 - 5, gy - 16, 10, 16, {w: 1.1}); rect(x + 7, gy - h + 7, 10, 9, {w: 1});
+  }
+  function hotel(x, gy, w, h, o){
+    o = o || {};
+    rect(x, gy - h, w, h, {w: 1.5});
+    var cols = Math.max(2, Math.floor(w / 18)), gap = w / cols;
+    for (var r = 0; r < 2; r++) for (var c = 0; c < cols; c++){
+      var wx = x + c * gap + gap / 2 - 4, wy = gy - h + 8 + r * 15;
+      if (o.lit && (r * cols + c) % 3 === 1) fillBox(wx, wy, 8, 9, SUN, .7);
+      rect(wx, wy, 8, 9, {w: 1, jit: .3});
+    }
+    fillBox(x + w / 2 - 6, gy - 18, 12, 18, SUN, o.lit ? .55 : 0); rect(x + w / 2 - 6, gy - 18, 12, 18, {w: 1.2});
+    if (o.sign !== 0){ fillBox(x + w / 2 - 20, gy - h - 13, 40, 11, SUN, o.lit ? .6 : .15); rect(x + w / 2 - 20, gy - h - 13, 40, 11, {w: 1.1, jit: .3}); hand('HOTEL', x + w / 2, gy - h - 4, 10, {bold: true}); }
+  }
+  function lamp(x, gy, on){
+    line(x, gy, x, gy - 52, {w: 1.4}); stroke(arc(x + 6, gy - 52, 6, Math.PI, Math.PI * 1.9), {w: 1.4});
+    if (on){ halo(x + 12, gy - 44, 42, SUN, .55); fillPoly([[x + 8, gy - 48], [x + 16, gy - 48], [x + 30, gy], [x - 6, gy]], SUN, .13); }
+    disc(x + 12, gy - 48, 3, SUN, 1); ring(x + 12, gy - 48, 3, {w: 1, jit: .2});
+  }
+  function phone(x, y, w, h){ fillBox(x, y, w, h, '#fbf7ec', 1); rect(x, y, w, h, {w: 1.5}); line(x + w / 2 - 5, y + h - 5, x + w / 2 + 5, y + h - 5, {w: 1.2, a: .6}); }
+  function keypad(x, y, s, lit, pressed){
+    var w = 15 * s, h = 24 * s; fillBox(x, y, w, h, '#fbf7ec', 1); rect(x, y, w, h, {w: 1.4});
+    for (var r = 0; r < 4; r++) for (var c = 0; c < 3; c++){
+      var kx = x + (3 + c * 4.5) * s, ky = y + (4 + r * 5.2) * s, k = r * 3 + c;
+      if (lit) disc(kx, ky, 1.5 * s, SUN, k === pressed ? 1 : .35);
+      ring(kx, ky, 1.5 * s, {w: 1, jit: .2});
+    }
+  }
+  function sunMark(x, y, r){ disc(x, y, r, SUN, .85); ring(x, y, r, {w: 1.2, jit: .3}); for (var i = 0; i < 10; i++){ var a = i * .6283; stroke([[x + Math.cos(a) * r * 1.4, y + Math.sin(a) * r * 1.4], [x + Math.cos(a) * r * 1.9, y + Math.sin(a) * r * 1.9]], {c: SUND, w: 1.1, jit: .2}); } }
+  function spark(x, y, r, c){ line(x - r, y, x + r, y, {c: c || SUND, w: 1.2, jit: .2}); line(x, y - r, x, y + r, {c: c || SUND, w: 1.2, jit: .2}); }
+  function star(x, y, r, on){
+    var p = []; for (var i = 0; i <= 10; i++){ var a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r; p.push([x + Math.cos(a) * rr, y + Math.sin(a) * rr]); }
+    if (on) fillPoly(p, SUN, .9); stroke(p, {w: 1.2, jit: .3});
+  }
+  function waves(x, y, e, col, a0, a1){ for (var k = 0; k < 3; k++){ var rr = 7 + ((e + k * 1.3) % 4) * 6; stroke(arc(x, y, rr, a0, a1), {c: col, w: 1.3, a: 1 - rr / 34, jit: .3}); } }
+  function door(x, gy, w, h, o, num){
+    fillBox(x, gy - h, w, h, SUN, .5 * o); rect(x, gy - h, w, h, {w: 1.6});
+    var lw = w * (1 - o * .82);
+    fillPoly([[x, gy - h], [x + lw, gy - h + o * 5], [x + lw, gy - o * 3], [x, gy]], '#fbf7ec', 1);
+    stroke(poly([[x, gy - h], [x + lw, gy - h + o * 5], [x + lw, gy - o * 3], [x, gy]]), {w: 1.3});
+    if (o < .5){ ring(x + lw - 6, gy - h / 2, 1.8, {w: 1.1, jit: .2}); if (num) hand(num, x + w / 2, gy - h + 17, 14, {bold: true}); }
+  }
+  function bed(x, gy, w){ rect(x, gy - 18, w, 18, {w: 1.4}); rect(x, gy - 36, 8, 36, {w: 1.3}); fillBox(x + 12, gy - 26, 24, 8, '#fbf7ec', 1); rect(x + 12, gy - 26, 24, 8, {w: 1.1}); line(x + 40, gy - 18, x + w, gy - 18, {w: 1}); }
+
+  // ---------- las escenas: t avanza dentro del apartado, e es el número de hoja ----------
+  var SCN = {
+    home: function(t, e){
+      ground(); house(58, GY, 54, 34); person(142, GY, e, {still: 1, bag: 1});
+      phone(374, 36, 42, 72);
+      var n = 1 + Math.floor(t * 4.99);
+      for (var i = 0; i < n; i++){ var w = 20 + (i % 2) * 9; if (i === n - 1) fillBox(380, 43 + i * 12, w, 8, SUN, .6); rect(380, 43 + i * 12, w, 8, {w: 1, jit: .3}); }
+      for (var k = 0; k < 9; k++){ var u = k / 8, x = lerp(366, 158, u), y = 62 - Math.sin(u * Math.PI) * 22; disc(x, y, 1.3, INK, .25 + .5 * (((k + e) % 9) / 9)); }
+      var ex = lerp(350, 170, (e % 6) / 5), ey = 62 - Math.sin(clamp((350 - ex) / 180, 0, 1) * Math.PI) * 22;
+      fillBox(ex - 7, ey - 5, 14, 10, '#fbf7ec', 1); rect(ex - 7, ey - 5, 14, 10, {w: 1.1, jit: .3}); stroke([[ex - 7, ey - 5], [ex, ey + 1], [ex + 7, ey - 5]], {w: 1, jit: .2});
+    },
+    road: function(t, e){
+      stroke(arc(110, 52, 9, .9, 4.6), {w: 1.3, c: SUND});
+      ground(); hotel(386, GY, 62, 56, {lit: 1});
+      for (var k = 0; k < 10; k++){ var x = ((k * 44 - e * 11) % 440 + 440) % 440 + 44; if (x < 440) line(x, GY + 9, x + 16, GY + 9, {w: 1.2, a: .45}); }
+      car(lerp(50, 322, ease(t)), GY);
+    },
+    park: function(t, e){
+      ground();
+      line(84, GY, 84, GY - 40, {w: 1.4}); fillBox(74, GY - 60, 20, 20, '#dbe8f1', 1); rect(74, GY - 60, 20, 20, {w: 1.3}); hand('P', 84, GY - 44, 17, {bold: true, c: BLUE});
+      rect(150, GY - 22, 6, 22, {w: 1.3});
+      var a = -ease(t / .3) * 1.25; line(153, GY - 20, 153 + Math.cos(a) * 58, GY - 20 + Math.sin(a) * 58, {c: RED, w: 2.2});
+      for (var i = 0; i < 5; i++) line(292 + i * 34, GY + 3, 300 + i * 34, GY + 14, {w: 1.1, a: .5});
+      rect(446, GY - 28, 10, 28, {w: 1.2}); stroke([[452, GY - 24], [449, GY - 16], [453, GY - 16], [450, GY - 8]], {c: SUND, w: 1.3, jit: .2});
+      car(lerp(44, 300, ease((t - .1) / .9)), GY);
+    },
+    walk: function(t, e){
+      ground(); car(52, GY); lamp(250, GY, 1);
+      line(388, GY - 4, 436, GY - 4, {w: 1.1}); line(380, GY - 2, 444, GY - 2, {w: 1, a: .6});
+      stroke(poly([[388, GY - 62], [412, GY - 72], [436, GY - 62]]), {w: 1.2});
+      door(396, GY - 4, 32, 52, 0);
+      person(lerp(118, 378, t), GY, e, {bag: 1});
+    },
+    code: function(t, e){
+      ground(); door(402, GY, 34, 58, 0); waves(419, GY - 66, e, BLUE, Math.PI * 1.2, Math.PI * 1.8);
+      person(352, GY, e, {still: 1});
+      phone(128, 36, 46, 72);
+      var n = Math.floor(t * 4.99), code = ['4', '7', '1', '2'];
+      for (var i = 0; i < 4; i++){ line(134 + i * 9, 80, 140 + i * 9, 80, {w: 1.2, a: .6}); if (i < n || t >= 1) hand(code[i], 137 + i * 9, 77, 15, {bold: true, c: SUND}); }
+      for (var k = 0; k < 2; k++){ var ex = lerp(54, 110, ((e + k * 3) % 6) / 5), ey = 52 + k * 30; fillBox(ex - 7, ey - 5, 14, 10, '#fbf7ec', 1); rect(ex - 7, ey - 5, 14, 10, {w: 1.1, jit: .3}); stroke([[ex - 7, ey - 5], [ex, ey + 1], [ex + 7, ey - 5]], {w: 1, jit: .2}); }
+      for (k = 0; k < 7; k++) disc(lerp(184, 338, k / 6), 70 - Math.sin(k / 6 * Math.PI) * 12, 1.2, INK, .3);
+    },
+    open: function(t, e){
+      ground(); halo(152, 70, 60, SUN, .35); keypad(130, 34, 3, 1, e % 12);
+      var o = ease((t - .4) / .45); door(300, GY, 50, 72, o);
+      person(lerp(232, 318, ease((t - .62) / .38)), GY, e, {still: t < .62, bag: 1});
+    },
+    stairs: function(t, e){
+      ground();
+      var pts = [[88, GY]]; for (var k = 0; k < 6; k++){ pts.push([88 + k * 22, GY - (k + 1) * 6]); pts.push([110 + k * 22, GY - (k + 1) * 6]); }
+      stroke(poly(pts), {w: 1.4}); line(220, GY - 36, 462, GY - 36, {w: 1.4}); line(220, GY - 36, 220, GY, {w: 1, a: .5});
+      ['11', '12', '13'].forEach(function(n, i){ var x = 286 + i * 58; if (i === 1) fillBox(x, GY - 72, 24, 36, SUN, .35); rect(x, GY - 72, 24, 36, {w: 1.2}); hand(n, x + 12, GY - 58, 12, {bold: true}); });
+      stroke([[236, GY - 58], [262, GY - 58]], {c: SUND, w: 1.6}); stroke([[255, GY - 63], [262, GY - 58], [255, GY - 53]], {c: SUND, w: 1.6, jit: .2});
+      var u = t * 9, px, py;
+      if (u < 6){ var s = Math.floor(u); px = 99 + s * 22; py = GY - (s + 1) * 6; if (u < .5){ px = 70; py = GY; } }
+      else { px = lerp(232, 330, (u - 6) / 3); py = GY - 36; }
+      person(px, py, e, {bag: 1});
+    },
+    roomdoor: function(t, e){
+      ground();
+      ctx.save(); ctx.globalAlpha = .35; door(140, GY, 46, 72, 0, '11'); door(360, GY, 46, 72, 0, '13'); ctx.restore();
+      var o = ease((t - .68) / .3);
+      door(250, GY, 46, 72, o); if (o < .5){ fillBox(260, GY - 66, 26, 15, SUN, .65); rect(260, GY - 66, 26, 15, {w: 1, jit: .3}); hand('12', 273, GY - 54, 14, {bold: true}); halo(273, GY - 58, 30, SUN, .35); }
+      keypad(304, GY - 46, .9, 1, e % 12);
+      person(lerp(96, 228, ease(t / .65)), GY, e, {bag: 1, still: t > .65});
+    },
+    room: function(t, e){
+      line(44, 34, 466, 34, {w: 1, a: .35}); ground();
+      rect(400, 44, 44, 40, {w: 1.3}); line(422, 44, 422, 84, {w: 1}); line(400, 64, 444, 64, {w: 1}); stroke(arc(411, 54, 5, .9, 4.6), {w: 1.1, c: SUND});
+      bed(254, GY, 110);
+      var on = t > .06; line(222, GY, 222, GY - 38, {w: 1.3}); if (on) halo(222, GY - 44, 46, SUN, .6); fillPoly([[214, GY - 38], [230, GY - 38], [226, GY - 50], [218, GY - 50]], on ? SUN : PAPER, .9); stroke(poly([[214, GY - 38], [230, GY - 38], [226, GY - 50], [218, GY - 50], [214, GY - 38]]), {w: 1.2, jit: .3});
+      rect(150, 48, 16, 14, {w: 1.1}); hand('21°', 158, 59, 10, {bold: true, c: BLUE});
+      rect(178, 48, 14, 14, {w: 1.1}); for (var k = 0; k < 6; k++) disc(181 + (k % 3) * 4, 52 + Math.floor(k / 3) * 6, 1.1, INK, (k + e) % 3 ? .9 : .3);
+      person(lerp(70, 196, ease(t)), GY, e, {bag: t < .4, still: t >= 1});
+    },
+    help: function(t, e){
+      ground(); person(112, GY, e, {still: 1}); hand('?', 112, GY - 46 + Math.sin(e * 1.3) * 2, 24, {bold: true, c: RED});
+      phone(236, 34, 52, 74);
+      var n = 1 + Math.floor(t * 4.99);
+      for (var i = 0; i < n; i++){ var rt = i % 2, x = rt ? 258 : 242; if (rt) fillBox(x, 40 + i * 12, 24, 8, SUN, .6); rect(x, 40 + i * 12, 24, 8, {w: 1, jit: .3}); }
+      rect(392, GY - 62, 24, 36, {w: 1.4}); ring(404, GY - 50, 5, {w: 1.1, jit: .2}); line(398, GY - 36, 410, GY - 36, {w: 1}); waves(404, GY - 50, e, BLUE, -1.1, 1.1);
+      for (var k = 0; k < 6; k++) disc(lerp(126, 226, k / 5), 62 - Math.sin(k / 5 * Math.PI) * 8, 1.2, INK, .3);
+    },
+    day2: function(t, e){
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, GY - 1); ctx.clip(); sunMark(120, lerp(GY + 8, 56, ease(t)), 11); ctx.restore();
+      ground(); hotel(300, GY, 72, 56, {});
+      rect(52, GY - 30, 44, 30, {w: 1.2}); stroke(poly([[48, GY - 30], [56, GY - 40], [92, GY - 40], [100, GY - 30]]), {w: 1.2, c: SUND}); hand('café', 74, GY - 12, 13, {bold: true});
+      person(lerp(326, 118, t), GY, e, {dir: -1});
+    },
+    clean: function(t, e){
+      ground(); line(44, 34, 466, 34, {w: 1, a: .35});
+      door(104, GY, 44, 72, 0, '12'); fillBox(137, GY - 34, 10, 17, RED, .35); rect(137, GY - 34, 10, 17, {w: 1, jit: .3}); ring(142, GY - 37, 2.4, {w: 1, jit: .2});
+      door(352, GY, 44, 72, 0, '14');
+      var cx = lerp(176, 286, t);
+      fillBox(cx, GY - 28, 36, 22, '#fbf7ec', 1); rect(cx, GY - 28, 36, 22, {w: 1.3}); ring(cx + 6, GY - 3, 3, {w: 1.2, jit: .2}); ring(cx + 30, GY - 3, 3, {w: 1.2, jit: .2});
+      line(cx + 30, GY - 28, cx + 38, GY - 64, {w: 1.4}); for (var k = 0; k < 4; k++) line(cx + 38, GY - 64, cx + 33 + k * 3.4, GY - 72, {w: 1, c: SUND});
+      person(cx - 13, GY, e);
+      if (t > .55){ spark(410, 50 + (e % 2) * 3, 5); spark(424, 72, 3.5); spark(404, 80 - (e % 2) * 2, 3); }
+    },
+    noise: function(t, e){
+      ground(); rect(140, GY - 76, 200, 76, {w: 1.5});
+      for (var r = 0; r < 2; r++) for (var c = 0; c < 4; c++){
+        var x = 156 + c * 46, y = GY - 66 + r * 32, noisy = r === 0 && c === 1, sleep = r === 1 && c === 2;
+        if (noisy) fillBox(x, y, 24, 20, SUN, .75); rect(x, y, 24, 20, {w: 1.1});
+        if (noisy){ waves(x + 12, y + 10, e, RED, 0, 6.3); if (t > .25) disc(x + 20, y + 4, 2.2, RED, e % 2 ? 1 : .3); }
+        if (sleep) hand('z z z', x + 12, y + 14, 12, {a: .7, rot: -.1});
+      }
+      phone(398, 46, 30, 52); if (t > .4){ hand('!', 413, 82, 30, {bold: true, c: RED}); waves(413, 46, e, RED, Math.PI * 1.15, Math.PI * 1.85); }
+      person(84, GY, e, {still: 1}); hand('?', 84, GY - 46, 18, {bold: true, c: RED, a: t > .4 ? 0 : .8});
+    },
+    washer: function(t, e){
+      ground(); line(44, 34, 466, 34, {w: 1, a: .35});
+      fillBox(110, GY - 68, 60, 68, '#fbf7ec', 1); rect(110, GY - 68, 60, 68, {w: 1.5}); line(110, GY - 56, 170, GY - 56, {w: 1.1}); disc(160, GY - 62, 2.2, SUN, 1); ring(160, GY - 62, 2.2, {w: 1, jit: .2});
+      ring(140, GY - 27, 19, {w: 1.5, jit: .3}); fillPoly(arc(140, GY - 27, 14, 0, 6.3), '#dbe8f1', 1); ring(140, GY - 27, 14, {w: 1.1, jit: .3});
+      for (var k = 0; k < 3; k++){ var a = e * .9 + k * 2.09; stroke(arc(140, GY - 27, 9, a, a + 1.2), {c: BLUE, w: 1.6, jit: .3}); }
+      rect(222, GY - 42, 66, 42, {w: 1.4}); line(222, GY - 34, 288, GY - 34, {w: 1}); stroke(poly([[236, GY - 50], [236, GY - 42], [262, GY - 42], [262, GY - 50]]), {w: 1.3}); line(262, GY - 48, 276, GY - 52, {w: 1.3});
+      for (k = 0; k < 3; k++){ var fx = 241 + k * 8; stroke([[fx, GY - 34], [fx + 2 + j(1), GY - 39 - (e + k) % 2 * 2], [fx + 4, GY - 34]], {c: RED, w: 1.2, jit: .2}); }
+      line(336, GY, 356, GY - 56, {w: 1.3}); line(436, GY, 416, GY - 56, {w: 1.3}); line(340, GY - 50, 432, GY - 50, {w: 1.3});
+      for (k = 0; k < 3; k++){ var sx = 356 + k * 24, sw = Math.sin(e * .9 + k) * 1.5; fillPoly([[sx, GY - 50], [sx + 16, GY - 50], [sx + 15 + sw, GY - 30], [sx + 1 + sw, GY - 30]], k === 1 ? SUN : '#dbe8f1', .8); stroke(poly([[sx, GY - 50], [sx + 16, GY - 50], [sx + 15 + sw, GY - 30], [sx + 1 + sw, GY - 30], [sx, GY - 50]]), {w: 1.1, jit: .3}); }
+      if (t > .5){ stroke(arc(140, GY + 1, 26, Math.PI, Math.PI * 2), {c: BLUE, w: 1.3, a: .7}); disc(176, GY - 8 + (e % 3) * 3, 1.8, BLUE, .9); }
+    },
+    fault: function(t, e){
+      ground(); line(44, 34, 466, 34, {w: 1, a: .35});
+      line(84, GY - 62, 120, GY - 62, {w: 2.2}); stroke(arc(120, GY - 55, 7, -Math.PI / 2, 0), {w: 2.2}); line(96, GY - 62, 96, GY - 72, {w: 1.6}); line(90, GY - 72, 102, GY - 72, {w: 1.6});
+      disc(127, GY - 44 + ((e % 5) / 5) * 38, 2.2, BLUE, .95); stroke(arc(127, GY + 1, 16, Math.PI, Math.PI * 2), {c: BLUE, w: 1.3});
+      ctx.save(); ctx.translate(226, GY - 42); ctx.rotate(.5 + Math.sin(e * .9) * .35);
+      stroke(seg(0, -14, 0, 26), {w: 3.4}); stroke(arc(0, -22, 8, .9, 5.4), {w: 3});
+      ctx.restore();
+      rect(332, GY - 74, 30, 36, {w: 1.4}); for (var k = 0; k < 3; k++){ var up = !(k === 1 && t < .7); line(340 + k * 7, GY - 60, 340 + k * 7, GY - 60 + (up ? -7 : 7), {w: 2, c: up ? GREEN : RED}); }
+      var tx = lerp(446, 290, ease(t)); person(tx, GY, e, {dir: -1, still: t >= 1}); fillBox(tx - 22, GY - 12, 14, 10, RED, .5); rect(tx - 22, GY - 12, 14, 10, {w: 1.2, jit: .3}); stroke(arc(tx - 15, GY - 12, 4, Math.PI, Math.PI * 2), {w: 1, jit: .2});
+    },
+    before: function(t, e){
+      ground(); line(44, 34, 466, 34, {w: 1, a: .35});
+      fillPoly(arc(112, GY - 46, 26, 0, 6.3), '#fbf7ec', 1); ring(112, GY - 46, 26, {w: 1.6});
+      for (var k = 0; k < 12; k++){ var a = k * Math.PI / 6; stroke([[112 + Math.cos(a) * 21, GY - 46 + Math.sin(a) * 21], [112 + Math.cos(a) * 24, GY - 46 + Math.sin(a) * 24]], {w: 1, jit: .2}); }
+      var ma = -Math.PI / 2 + (t - 1) * 4.2, ha = -Math.PI / 2 - (1 - t) * .5;
+      line(112, GY - 46, 112 + Math.cos(ma) * 19, GY - 46 + Math.sin(ma) * 19, {w: 1.4, c: t > .8 ? RED : INK}); line(112, GY - 46, 112 + Math.cos(ha) * 12, GY - 46 + Math.sin(ha) * 12, {w: 2});
+      fillBox(214, GY - 28, 52, 28, SUN, .5); rect(214, GY - 28, 52, 28, {w: 1.4});
+      var la = -lerp(1.3, 0, ease(t)); stroke(poly([[214, GY - 28], [214 + Math.cos(la) * 52, GY - 28 + Math.sin(la) * 52]]), {w: 1.5}); stroke(arc(240, GY - 28, 6, Math.PI, Math.PI * 2), {w: 1.1, a: t > .9 ? 1 : 0});
+      person(310, GY, e, {still: 1}); bed(358, GY, 92);
+    },
+    leave: function(t, e){
+      ground(); rect(56, GY - 76, 134, 76, {w: 1.4}); bed(66, GY, 70);
+      disc(123, GY - 74, 3, BLUE, 1); for (var k = 0; k < 3; k++){ var rr = 10 + ((e + k * 1.3) % 4) * 9; stroke(arc(123, GY - 74, rr, .35, Math.PI - .35), {c: BLUE, w: 1.3, a: 1 - rr / 50, jit: .3}); }
+      if (t > .5) hand('vacía', 150, GY - 34, 21, {bold: true, c: GREEN, rot: -.08});
+      door(190, GY, 28, 58, t < .25 ? .6 : 0);
+      keypad(226, GY - 44, .9, 1, -1); if (t > .75){ line(226, GY - 44, 240, GY - 22, {c: RED, w: 1.8}); line(240, GY - 44, 226, GY - 22, {c: RED, w: 1.8}); }
+      person(lerp(214, 446, t), GY, e, {bag: 1});
+    },
+    after: function(t, e){
+      ground(); line(44, 34, 466, 34, {w: 1, a: .35}); bed(60, GY, 100);
+      var px = lerp(180, 262, t); person(px, GY, e); line(px + 6, GY - 16, px + 20, GY, {w: 1.4}); for (var k = 0; k < 4; k++) line(px + 20, GY, px + 16 + k * 3, GY - 6, {w: 1, c: SUND});
+      if (e % 3 === 0){ spark(150, 54, 7); disc(150, 54, 3, SUN, .8); }
+      var n = Math.floor(t * 5.99); for (k = 0; k < 5; k++) star(318 + k * 26, 58, 10, k < n);
+      fillBox(352, GY - 30, 44, 26, '#fbf7ec', 1); rect(352, GY - 30, 44, 26, {w: 1.2}); stroke([[352, GY - 30], [374, GY - 15], [396, GY - 30]], {w: 1.1, jit: .2});
+    },
+    common: function(t, e){
+      ground(); line(44, 34, 466, 34, {w: 1, a: .35});
+      var px = lerp(430, 196, t), near = px < 300;
+      line(206, 34, 206, 46, {w: 1.2}); if (near) halo(206, 54, 54, SUN, .6); fillPoly([[196, 56], [216, 56], [211, 46], [201, 46]], near ? SUN : PAPER, .9); stroke(poly([[196, 56], [216, 56], [211, 46], [201, 46], [196, 56]]), {w: 1.2, jit: .3});
+      rect(84, GY - 22, 84, 22, {w: 1.4}); rect(90, GY - 42, 72, 20, {w: 1.3}); rect(78, GY - 30, 10, 30, {w: 1.2}); rect(164, GY - 30, 10, 30, {w: 1.2});
+      stroke(poly([[52, GY], [50, GY - 14], [66, GY - 14], [64, GY]]), {w: 1.2}); for (var k = 0; k < 4; k++) stroke(arc(58 + (k - 1.5) * 5, GY - 14, 16, -1.9 + k * .25, -1.25 + k * .25), {c: GREEN, w: 1.5, jit: .4});
+      fillBox(322, GY - 72, 42, 72, '#fbf7ec', 1); rect(322, GY - 72, 42, 72, {w: 1.5}); for (var r = 0; r < 3; r++) for (var c = 0; c < 3; c++) disc(330 + c * 9, GY - 62 + r * 11, 2.4, (r + c + e) % 4 ? '#dbe8f1' : SUN, 1); rect(328, GY - 22, 22, 9, {w: 1}); line(356, GY - 66, 356, GY - 36, {w: 1, a: .6});
+      rect(440, 38, 16, 9, {w: 1.2}); disc(441, 43, 2.4, e % 2 ? RED : INK, .9);
+      person(px, GY, e, {dir: -1, still: t >= 1});
+    },
+    zones: function(t, e, idx){
+      ground(); stroke(poly([[102, 34], [240, 26], [378, 34]]), {w: 1.3});
+      for (var k = 0; k < 15; k++){
+        var c = k % 5, r = Math.floor(k / 5), x = 110 + c * 52, y = 34 + r * 26, on = k === idx;
+        if (on){ fillBox(x, y, 52, 26, SUN, .85); halo(x + 26, y + 13, 44, SUN, .4); }
+        rect(x, y, 52, 26, {w: 1.2, jit: .4});
+        if (on) hand(String(k + 1), x + 26, y + 19, 18, {bold: true}); else rect(x + 20, y + 8, 12, 11, {w: .9, a: idx != null && k < idx ? .7 : .35, jit: .3});
+      }
+      person(lerp(70, 92, t), GY, e, {still: 1}); person(lerp(430, 400, t), GY, e + 2, {still: 1, dir: -1});
+    },
+    pending: function(t, e, idx){
+      ground(); hand('?', 110, GY - 14, 96, {bold: true, c: RED, rot: Math.sin(e * 1.1) * .06});
+      for (var k = 0; k < 3; k++){ var y = 44 + k * 24, on = k === idx; if (on) fillBox(246, y - 3, 200, 20, SUN, .35); rect(250, y, 14, 14, {w: 1.4}); line(274, y + 5, 400 - k * 30, y + 5, {w: 1.2, a: .6}); line(274, y + 11, 350 - k * 14, y + 11, {w: 1.2, a: .4}); }
+    }
+  };
+
+  // ---------- la ruta de abajo: dónde va el huésped en el recorrido ----------
+  function route(n){
+    var x0 = 46, x1 = 418, y = 328;
+    line(x0, y, x1, y, {w: 1, a: .35, jit: .3});
+    MARKS.forEach(function(m){ var x = lerp(x0, x1, m.i / (TOTAL - 1)), big = m.label.charAt(0) === '—'; line(x, y - (big ? 5 : 2.5), x, y + (big ? 5 : 2.5), {w: big ? 1.4 : 1, a: big ? .7 : .4, jit: .2}); });
+    var px = lerp(x0, x1, n / (TOTAL - 1)); disc(px, y, 4, SUN, 1); ring(px, y, 4, {w: 1.2, jit: .2});
+  }
+  function stamp(txt, col, x, y){
+    ctx.save(); ctx.font = font(14, true); var w = ctx.measureText(txt).width + 14; ctx.restore();
+    ctx.save(); ctx.translate(x - w / 2, y); ctx.rotate(-.025);
+    fillBox(-w / 2, -11, w, 16, PAPER, .85); stroke(box(-w / 2, -11, w, 16), {c: col, w: 1.5, jit: .4});
+    hand(txt, 0, 1.5, 14, {bold: true, c: col});
+    ctx.restore();
+  }
+  function headLine(S, n){
+    var sh = SHEETS[n];
+    hand(sh.name, 46, 23, 14.5, {a: .6, align: 'left'});
+    if (sh.k === 'row') hand((sh.i + 1) + ' / ' + sh.S.rows.length, 466, 23, 14.5, {a: .5, align: 'right'});
+  }
+  // escribe pregunta y respuesta, encogiendo la letra si no cabe
+  function qa(q, a, extra, top, qcol){
+    var X = 48, MW = 414, bottom = 316, k = 1, ql, al, el, h;
+    for (var tries = 0; tries < 9; tries++){
+      ql = wrap(q, 26 * k, true, MW); al = wrap(a, 19.5 * k, false, MW - 16); el = extra ? wrap(extra, 16.5 * k, true, MW - 16) : [];
+      h = ql.length * 25 * k + 8 + al.length * 20.5 * k + (el.length ? 6 + el.length * 18 * k : 0);
+      if (top + h <= bottom) break; k *= .94;
+    }
+    var y = top + 20 * k;
+    y = para(ql, X, y, 26 * k, 25 * k, {align: 'left', bold: true, c: qcol || INK});
+    y += 6;
+    stroke([[X, y - 6], [X + 9, y - 6]], {c: SUND, w: 1.6, jit: .3}); stroke([[X + 5, y - 10], [X + 9, y - 6], [X + 5, y - 2]], {c: SUND, w: 1.6, jit: .2});
+    y = para(al, X + 16, y, 19.5 * k, 20.5 * k, {align: 'left', a: .92});
+    if (el.length){ y += 4; para(el, X + 16, y, 16.5 * k, 18 * k, {align: 'left', bold: true, c: BLUE}); }
+  }
+
+  function cover(f){
+    hand('lista de comprobación de apertura', 250, 54, 22, {a: .7});
+    var tl = wrap('El recorrido del huésped', 58, true, 400); para(tl, 250, 110, 58, 50, {bold: true});
+    var y0 = tl.length > 1 ? 172 : 150;
+    line(92, y0 + 8, 408, y0 + 8, {w: 1.2, a: .5});
+    // el recorrido en miniatura: coche, puerta, cama, maleta
+    var gy = y0 + 62; line(80, gy, 420, gy, {w: 1.1, a: .5});
+    car(92, gy); door(206, gy, 20, 34, 0); bed(270, gy, 56); person(372, gy, f, {bag: 1, still: 1});
+    for (var k = 0; k < 14; k++) disc(150 + k * 18, gy + 9, 1.2, INK, .35);
+    hand(NQ + ' preguntas · cada respuesta obliga a hacer algo', 250, H - 50, 19, {a: .8});
+    hand('pasa las hojas  →', 250, H - 20, 17, {a: .55});
+  }
+
+  function page(n){
+    var sh = SHEETS[n];
+    paper(n);
+    line(31, 16, 31, H - 16, {a: .18, w: 1});
+    if (sh.k === 'cover'){ cover(n); return; }
+    route(n);
+    if (sh.k === 'intro'){
+      hand('antes de empezar', 46, 23, 14.5, {a: .6, align: 'left'});
+      var gy = 96; line(60, gy, 440, gy, {w: 1.1, a: .45}); car(70, gy); door(214, gy, 20, 34, 0); bed(280, gy, 56); person(lerp(120, 400, (n - 1) / 2), gy, n, {bag: 1});
+      qa(sh.q, sh.a, null, 116, SUND); return;
+    }
+    if (sh.k === 'part'){
+      var P = sh.P, pl = wrap(P.part, 62, true, 400);
+      para(pl, 250, 104, 62, 54, {bold: true});
+      var y = 104 + (pl.length - 1) * 54 + 22;
+      stroke(poly([[150, y], [200, y - 3], [250, y + 2], [300, y - 2], [350, y]]), {c: SUND, w: 2.2, jit: .8});
+      y += 28; y = para(wrap(P.status, 19, true, 400), 250, y, 19, 20, {bold: true, c: P.draft ? RED : (P.part === 'Pendiente' ? RED : GREEN)});
+      if (P.intro){ y += 12; para(wrap(P.intro, 19.5, false, 390), 250, y, 19.5, 21, {a: .9}); }
+      else {
+        var pg = 286, pi = DOC.indexOf(P); line(80, pg, 420, pg, {w: 1.1, a: .45});
+        car(92, pg); door(206, pg, 20, 34, 0); bed(270, pg, 56); person([162, 300, 372, 240, 396][pi] || 162, pg, n, {bag: 1, still: 1});
+      }
+      return;
+    }
+    var S = sh.S, first = SHEETS.indexOf(SHEETS.filter(function(x){ return x.S === S; })[0]), count = SHEETS.filter(function(x){ return x.S === S; }).length;
+    var t = count > 1 ? (n - first) / (count - 1) : 1;
+    headLine(S, n);
+    SCN[S.sc](clamp(t, 0, 1), n, sh.k === 'row' ? sh.i : null);
+    if (sh.k === 'sec'){
+      var sl = wrap(S.t, 38, true, 410), yy = 162;
+      yy = para(sl, 250, yy, 38, 35, {bold: true});
+      if (S.note){ yy += 2; yy = para(wrap(S.note, 18.5, false, 390), 250, yy, 18.5, 20, {a: .88}); }
+      var nn = S.rows.filter(function(r){ return r[3] !== 'p'; }).length;
+      hand(nn + (S.zone ? ' zonas' : ' preguntas') + (sh.P.draft ? ' · borrador' : ''), 250, 312, 17, {bold: true, c: sh.P.draft ? RED : SUND});
+      return;
+    }
+    if (sh.k === 'after'){ qa('Los dos casos que suelen olvidarse', sh.a, null, 122, SUND); return; }
+    var r = sh.r, mark = r[3];
+    if (mark === 'x') stamp('SIN RESOLVER', RED, 418, 22);
+    else if (mark === 'ok') stamp('revisado por Enrique', GREEN, 418, 22);
+    else if (mark === 'p') stamp('proceso fijado por Enrique', SUND, 418, 22);
+    else if (sh.P.draft) stamp('borrador', RED, 418, 22);
+    qa(r[0], r[1], r[2] ? 'Responsabilidad: ' + r[2] : null, 122, mark === 'x' ? RED : null);
+  }
+
+  function draw(){
+    var rc = cv.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 3);
+    var pw = Math.max(240, Math.round(rc.width * dpr)), ph = Math.round(pw * H / W);
+    if (cv.width !== pw || cv.height !== ph){ cv.width = pw; cv.height = ph; }
+    ctx.setTransform(pw / W, 0, 0, ph / H, 0, 0);
+    R = rng(frame * 7919 + 13);
+    page(frame);
+  }
+
+  // ---------- controles ----------
+  bar.max = TOTAL - 1;
+  MARKS.forEach(function(m){ var o = document.createElement('option'); o.value = m.i; o.textContent = m.label; jump.appendChild(o); });
+  (function(){ var o = document.createElement('option'); o.value = 0; o.textContent = 'Portada'; jump.insertBefore(o, jump.firstChild); })();
+
+  function setFrame(n, quiet){
+    n = clamp(Math.round(n), 0, TOTAL - 1);
+    if (n === frame && !quiet) return;
+    frame = n; draw();
+    var sh = SHEETS[n];
+    bar.value = n; sceneEl.textContent = sh.name; countEl.textContent = 'hoja ' + (n + 1) + ' de ' + TOTAL;
+    var cur = 0; MARKS.forEach(function(m){ if (m.i <= n) cur = m.i; }); jump.value = cur;
+    sr.textContent = sh.k === 'row' ? sh.name + '. ' + sh.r[0] + ' ' + sh.r[1] + (sh.r[2] ? '. Responsabilidad: ' + sh.r[2] : '') : (sh.q ? sh.q + '. ' + sh.a : sh.name + (sh.a ? '. ' + sh.a : ''));
+    if (!quiet){
+      sheen.classList.remove('go'); void sheen.offsetWidth; sheen.classList.add('go');
+      thumb.classList.add('tick'); clearTimeout(setFrame._t); setFrame._t = setTimeout(function(){ thumb.classList.remove('tick'); }, 70);
+    }
+  }
+  function stop(){ if (timer){ clearInterval(timer); timer = null; } playBtn.textContent = frame >= TOTAL - 1 ? 'Ver otra vez' : 'Pasar las hojas'; }
+  function play(){
+    if (timer){ stop(); return; }
+    if (frame >= TOTAL - 1) setFrame(0);
+    playBtn.textContent = 'Parar';
+    timer = setInterval(function(){ if (frame >= TOTAL - 1){ stop(); return; } setFrame(frame + 1); }, 150);
+  }
+  playBtn.addEventListener('click', play);
+  document.getElementById('prev').addEventListener('click', function(){ stop(); setFrame(frame - 1); });
+  document.getElementById('next').addEventListener('click', function(){ stop(); setFrame(frame + 1); });
+  jump.addEventListener('change', function(){ stop(); setFrame(+jump.value); });
+  bar.addEventListener('input', function(){ stop(); setFrame(+bar.value); });
+
+  var drag = null;
+  book.addEventListener('pointerdown', function(e){ stop(); drag = {x: e.clientX, y: e.clientY, f: frame}; try{ book.setPointerCapture(e.pointerId); }catch(_){} });
+  book.addEventListener('pointermove', function(e){ if (!drag) return; var d = (drag.y - e.clientY) + (drag.x - e.clientX); setFrame(drag.f + d / 12); });
+  function end(){ drag = null; }
+  book.addEventListener('pointerup', end); book.addEventListener('pointercancel', end);
+
+  var acc = 0;
+  window.addEventListener('wheel', function(e){
+    e.preventDefault(); stop(); acc += e.deltaY;
+    var steps = (acc / 60) | 0; if (steps){ acc -= steps * 60; setFrame(frame + steps); }
+  }, {passive: false});
+  window.addEventListener('keydown', function(e){
+    if (e.target === jump) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown'){ e.preventDefault(); stop(); setFrame(frame + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp'){ e.preventDefault(); stop(); setFrame(frame - 1); }
+  });
+  window.addEventListener('resize', draw);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+  window.__setFrame = function(n){ setFrame(n, true); };
+  window.__total = TOTAL;
+  setFrame(0, true);
+})();
+</script>
+</body>
+</html>
