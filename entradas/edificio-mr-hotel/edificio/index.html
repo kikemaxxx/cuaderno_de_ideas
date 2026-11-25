@@ -1,0 +1,317 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Edificio Mr. Hotel</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Jost:wght@400;500;600&display=swap">
+<style>
+/* Layout: el catálogo como un edificio de hotel visto de frente. Ático arriba (salida), recepción abajo (lo más fácil). Cada oferta es una habitación numerada; filtros por quién te atiende y cómo cobras. Marca única Mr. Hotel: marfil, azul marino y dorado, sin tema oscuro a propósito. */
+:root{
+  --paper:#F3EEE4; --paper-2:#EAE2D3; --wall:#FBF8F2;
+  --ink:#14171C; --ink-2:#4A4E57; --navy:#1E3A5F; --navy-2:#2C4D78;
+  --gold:#A9824A; --gold-soft:#C9A46A; --line:#D6CAB4;
+  --c-com:#1F6B5C; --c-fee:#1E3A5F; --c-mes:#7A4E9A; --c-exi:#9A5B1E; --c-pue:#6B6F78;
+  --display:'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --body:'Jost', 'Helvetica Neue', Arial, sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{background:var(--paper)}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:1120px;margin:0 auto;padding-block:28px 64px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:flex;flex-direction:column;gap:44px}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+
+.eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-weight:600;margin:0}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(38px,6vw,64px);line-height:1;margin:10px 0 0;color:var(--navy);text-wrap:balance;max-width:16ch}
+h1 em{font-style:italic;font-weight:500;color:var(--gold)}
+h2{font-family:var(--display);font-weight:600;font-size:clamp(28px,4vw,38px);line-height:1.05;margin:6px 0 0;color:var(--navy);text-wrap:balance}
+.lede{max-width:62ch;color:var(--ink-2);margin:14px 0 0;font-size:17px}
+
+/* filtros */
+.filters{display:flex;flex-direction:column;gap:12px;background:var(--wall);border:1px solid var(--line);border-radius:6px;padding:16px}
+.frow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.flabel{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2);font-weight:600;min-width:150px}
+.chip{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:6px 13px;font-size:14px;display:inline-flex;align-items:center;gap:7px}
+.chip[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:var(--paper)}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.count{font-size:14px;color:var(--ink-2);margin:0}
+.count b{color:var(--navy);font-variant-numeric:tabular-nums}
+
+/* edificio */
+.building{display:flex;flex-direction:column;border:2px solid var(--navy);border-top:0;background:var(--wall);position:relative}
+.roof{height:26px;background:var(--navy);clip-path:polygon(3% 100%,97% 100%,100% 0,0 0);margin:0 -2px}
+.roofsign{background:var(--navy);color:var(--paper);text-align:center;font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.06em;padding:4px 0 2px;margin:0 -2px}
+.floor{display:grid;grid-template-columns:118px minmax(0,1fr);border-top:1px solid var(--line)}
+.floor:first-of-type{border-top:0}
+.flr{background:var(--paper-2);border-right:1px solid var(--line);padding:14px 12px;display:flex;flex-direction:column;gap:2px}
+.flr .num{font-family:var(--display);font-weight:700;font-size:40px;line-height:.9;color:var(--navy)}
+.flr .nm{font-size:13px;font-weight:600;line-height:1.25;color:var(--ink)}
+.flr .sub{font-size:12px;color:var(--ink-2);line-height:1.3}
+.rooms{padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:10px;align-content:start;min-width:0}
+.room{position:relative;text-align:left;background:var(--paper);border:1px solid var(--line);border-radius:3px 3px 0 0;padding:10px 11px 11px;display:flex;flex-direction:column;gap:6px;min-height:96px;color:var(--ink);transition:opacity .2s,transform .15s,border-color .15s}
+.room::after{content:"";position:absolute;right:10px;top:50%;width:5px;height:5px;border-radius:50%;background:var(--gold-soft)}
+.room:hover{border-color:var(--gold);transform:translateY(-1px)}
+.room[aria-expanded="true"]{border-color:var(--navy);background:var(--navy);color:var(--paper)}
+.room[aria-expanded="true"] .rn{color:var(--gold-soft)}
+.room.dim{opacity:.28}
+.room.star{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.rn{font-family:var(--display);font-weight:700;font-size:17px;color:var(--gold);font-variant-numeric:tabular-nums;line-height:1}
+.rt{font-size:14.5px;font-weight:500;line-height:1.25;padding-right:14px}
+.rmeta{display:flex;flex-wrap:wrap;gap:5px;margin-top:auto}
+.pay{font-size:11px;font-weight:600;letter-spacing:.04em;border-radius:999px;padding:2px 8px;color:#fff}
+.who{font-size:11px;color:var(--ink-2);border:1px solid var(--line);border-radius:999px;padding:1px 7px;background:var(--wall)}
+.room[aria-expanded="true"] .who{background:transparent;color:var(--paper);border-color:rgba(243,238,228,.35)}
+
+.detail{grid-column:1/-1;background:var(--wall);border:1px solid var(--navy);border-top:3px solid var(--navy);padding:16px 16px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 22px;animation:open .25s ease}
+@keyframes open{from{opacity:.3;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.detail h3{grid-column:1/-1;margin:0;font-family:var(--display);font-size:26px;line-height:1.1;color:var(--navy);text-wrap:balance}
+.detail .k{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:600;margin:0 0 3px}
+.detail p{margin:0;font-size:15px;color:var(--ink);max-width:60ch}
+.detail .close{grid-column:1/-1;justify-self:start;border:0;background:none;padding:0;color:var(--navy);font-size:14px;text-decoration:underline;text-underline-offset:3px}
+
+.door{display:flex;justify-content:center;gap:0;padding:0;border-top:2px solid var(--navy);background:var(--paper-2)}
+.door span{background:var(--navy);color:var(--paper);font-size:12px;letter-spacing:.2em;text-transform:uppercase;font-weight:600;padding:8px 26px 6px;border-radius:30px 30px 0 0}
+.street{height:8px;background:var(--ink)}
+
+@media (max-width:640px){
+  .floor{grid-template-columns:minmax(0,1fr)}
+  .flr{flex-direction:row;align-items:baseline;gap:10px;border-right:0;border-bottom:1px solid var(--line);padding:10px 12px}
+  .flr .num{font-size:30px}
+  .flr .sub{display:none}
+  .rooms{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+  .flabel{min-width:0;width:100%}
+}
+
+/* escalera */
+.ladder{list-style:none;margin:18px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0;border:1px solid var(--line);background:var(--wall)}
+.ladder li{padding:16px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:6px;position:relative}
+.ladder li:last-child{border-right:0}
+.ladder .st{font-family:var(--display);font-size:15px;font-weight:700;color:var(--gold)}
+.ladder b{font-size:16px;color:var(--navy);line-height:1.25}
+.ladder span{font-size:14px;color:var(--ink-2)}
+.ladder .bar{height:4px;background:var(--line);margin-top:auto}
+.ladder .bar i{display:block;height:100%;background:var(--navy)}
+
+.reads{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:26px;margin-top:18px}
+.reads div{border-top:2px solid var(--gold);padding-top:12px}
+.reads h3{font-size:17px;font-weight:600;margin:0 0 6px;color:var(--navy)}
+.reads p{margin:0;color:var(--ink-2);font-size:15px;max-width:60ch}
+
+.tests{width:100%;border-collapse:collapse;margin-top:16px;font-size:15px;min-width:640px}
+.tbox{overflow-x:auto;border:1px solid var(--line);background:var(--wall)}
+.tests th{text-align:left;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--paper-2)}
+.tests td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}
+.tests tr:last-child td{border-bottom:0}
+.tests td:first-child{font-family:var(--display);font-weight:700;color:var(--gold);font-size:18px;white-space:nowrap}
+.tests b{color:var(--navy)}
+
+.src{font-size:13px;color:var(--ink-2);border-top:1px solid var(--line);padding-top:14px;display:flex;flex-wrap:wrap;gap:6px 16px}
+.src a{color:var(--navy)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Mr. Hotel · catálogo para visitas · nov 2026</p>
+    <h1>Siempre hay una <em>habitación</em> que alquilar</h1>
+    <p class="lede">Todo lo que puedes ofrecer en un hotel, ordenado como un edificio. Abajo, lo que cualquiera te acepta en recepción sin pedir permiso. Arriba, lo grande: alquiler, gestión, venta. Si el dueño no quiere ceder el hotel, te quedan cinco plantas para seguir trabajando con él. Toca una habitación para ver qué gana el hotel, qué ganas tú y cómo empezar.</p>
+  </header>
+
+  <section class="filters" aria-label="Filtros">
+    <div class="frow" role="group" aria-label="Con quién hablas">
+      <span class="flabel">¿Con quién hablas?</span>
+      <button class="chip" type="button" id="w-all" data-who="all" aria-pressed="true">Con cualquiera</button>
+      <button class="chip" type="button" id="w-r" data-who="r" aria-pressed="false">Recepción</button>
+      <button class="chip" type="button" id="w-e" data-who="e" aria-pressed="false">Encargado</button>
+      <button class="chip" type="button" id="w-d" data-who="d" aria-pressed="false">Dueño o familia</button>
+    </div>
+    <div class="frow" role="group" aria-label="Cómo cobras">
+      <span class="flabel">¿Cómo cobras?</span>
+      <button class="chip" type="button" id="p-all" data-pay="all" aria-pressed="true">Todo</button>
+    </div>
+    <p class="count" id="count"></p>
+  </section>
+
+  <section aria-label="El edificio">
+    <div class="roof" aria-hidden="true"></div>
+    <div class="roofsign" aria-hidden="true">Mr. Hotel</div>
+    <div class="building" id="building"></div>
+    <div class="door" aria-hidden="true"><span>Entrada</span></div>
+    <div class="street" aria-hidden="true"></div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Cómo se sube</p>
+    <h2>De la recepción al ático</h2>
+    <p class="lede">Nadie te firma un alquiler el primer día. Cada habitación que te aceptan te deja volver, ver los números y conocer al dueño. Empieza siempre por lo que la persona que tienes delante puede decir que sí.</p>
+    <ol class="ladder">
+      <li><span class="st">Planta 0</span><b>Un regalo útil</b><span>Guía del huésped con eSIM y excursiones. Gratis para el hotel. Te deja un QR en su mostrador.</span><span class="bar"><i style="width:15%"></i></span></li>
+      <li><span class="st">Planta 1</span><b>Un ingreso que no tenían</b><span>Day pass, cargador eléctrico, consigna. El hotel cobra por algo que ya tiene.</span><span class="bar"><i style="width:32%"></i></span></li>
+      <li><span class="st">Plantas 2 y 3</span><b>Te pagan por un trabajo</b><span>Fotos y vídeo, factura de la luz, grupos. Ves sus números por primera vez.</span><span class="bar"><i style="width:52%"></i></span></li>
+      <li><span class="st">Planta 4</span><b>Te pagan cada mes</b><span>Recepción por WhatsApp, ventas antes de llegar. Ya eres parte de la operativa.</span><span class="bar"><i style="width:74%"></i></span></li>
+      <li><span class="st">Plantas 5 y ático</span><b>La gran conversación</b><span>Financiación, gestión, alquiler, traspaso. Llegas con confianza y con datos.</span><span class="bar"><i style="width:100%"></i></span></li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="eyebrow">Lo que enseña el edificio</p>
+    <h2>Tres lecturas</h2>
+    <div class="reads">
+      <div><h3>La guía del huésped es la llave maestra</h3><p>Una sola página por hotel, como SoyMrHotel, con eSIM, excursiones, traslados y restaurantes, cada enlace con tu código. Al hotel le das un servicio gratis; tú cobras comisión de todo lo que se venda, en todos los hoteles a la vez. Y ya sabes hacerla.</p></div>
+      <div><h3>Tu oficio vende solo</h3><p>Fotos, vídeo, contenido y automatización son lo que haces cada día. Son la planta donde más ganas por hora y la que más rápido te lleva a hablar con el dueño, porque toca su escaparate.</p></div>
+      <div><h3>Las comisiones, siempre a la vista</h3><p>Si un recepcionista te presenta al dueño o recomienda la eSIM, puede llevarse parte. Pero con el dueño al tanto: una comisión escondida a un empleado te cierra la puerta del ático para siempre.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Prueba primero</p>
+    <h2>Tres habitaciones para las próximas 4 semanas</h2>
+    <p class="lede">No hace falta tenerlo todo montado. Se prueban tres, una de cada tipo, en las mismas visitas que la tarjeta quiz. Revisión el 3 de diciembre: seguir, ajustar o quitar.</p>
+    <div class="tbox">
+      <table class="tests">
+        <thead><tr><th>Habitación</th><th>Qué haces</th><th>Éxito</th><th>Fracaso</th><th>Antes de empezar</th></tr></thead>
+        <tbody>
+          <tr><td>006</td><td><b>Guía del huésped</b> con eSIM y excursiones, ofrecida en 10 hoteles</td><td>3 la ponen en recepción y hay al menos 1 venta</td><td>Ninguno la acepta</td><td>Darte de alta como afiliado en Holafly y Civitatis. Una plantilla de guía.</td></tr>
+          <tr><td>303</td><td><b>Fotos y vídeo del hotel</b>, ofrecido a 10 dueños con un ejemplo</td><td>1 lo paga</td><td>Nadie pide precio</td><td>Un precio cerrado y un ejemplo hecho con fotos de un hotel de Standbyme</td></tr>
+          <tr><td>201</td><td><b>Revisión de la factura de la luz</b>, pedida en 5 hoteles</td><td>2 te dan la factura</td><td>Ninguno</td><td>Un comparador o un asesor energético con quien repartir la comisión</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="src">
+    <span>Fuentes:</span>
+    <a href="https://www.civitatis.com/es/afiliados/otras-empresas-del-sector-turistico" target="_blank" rel="noopener">Civitatis, afiliados para empresas turísticas</a>
+    <a href="https://esim.holafly.com/es/esim-partners/" target="_blank" rel="noopener">Holafly, eSIM Partners</a>
+    <a href="https://www.hosteltur.com/122399_pases-dia-mejor-opcion-aumentar-total-revenue-hotel.html" target="_blank" rel="noopener">Hosteltur, pases de día</a>
+    <a href="https://chargeguru.com/es/empresas/recarga-en-destino/" target="_blank" rel="noopener">ChargeGuru, recarga en destino</a>
+    <a href="https://radicalstorage.com/travel/radical-storage-vs-bounce/" target="_blank" rel="noopener">Radical Storage y Bounce</a>
+  </footer>
+</div>
+
+<script>
+(function(){
+const PAY={
+  com:{l:"Comisión",c:"var(--c-com)",d:"Cobras un % o una cantidad fija de cada venta o cliente que traes."},
+  fee:{l:"Por trabajo",c:"var(--c-fee)",d:"Te pagan una vez por un trabajo cerrado."},
+  mes:{l:"Cada mes",c:"var(--c-mes)",d:"Ingreso que se repite mientras el servicio siga."},
+  exi:{l:"Al cerrar",c:"var(--c-exi)",d:"Cobras solo si la operación se firma."},
+  pue:{l:"Abre puerta",c:"var(--c-pue)",d:"Casi no cobras, pero te deja volver y conocer al dueño."}
+};
+const WHO={r:"Recepción",e:"Encargado",d:"Dueño"};
+const FLOORS=[
+ {n:"Á",nm:"Ático · Salida o cambio",sub:"Lo que ya ofreces. El gran contrato.",rooms:[
+  {n:"601",t:"Alquiler fijo con Standbyme",pay:"exi",who:["d"],hotel:"Cobra una renta fija cada mes y se olvida de operar.",you:"El contrato entra en Standbyme y tú cobras la captación que fija el pacto de socios.",how:"Solo con el dueño, cuando ya te conoce. Llega con sus números de ocupación."},
+  {n:"602",t:"Gestión con fee",pay:"mes",who:["d"],hotel:"Sigue siendo dueño del negocio y gana más sin estar detrás.",you:"Un contrato de gestión para Standbyme, que cobra cada mes un % de ventas.",how:"Para el dueño que no quiere vender ni alquilar, pero está cansado."},
+  {n:"603",t:"Traspaso u operador",pay:"exi",who:["d"],hotel:"Cobra el traspaso y sale ordenado.",you:"Honorarios de intermediación si lo cierra otro operador, o el contrato si es Standbyme.",how:"Cuando los hijos no siguen. Es el «Capitán Cansado» del quiz."},
+  {n:"604",t:"Venta del edificio o del negocio",pay:"exi",who:["d"],hotel:"Vende al mejor precio, con compradores serios.",you:"% de éxito sobre la venta, o el contrato de operación con el comprador.",how:"Con valoración y una ficha de inversión preparada."}
+ ]},
+ {n:"5",nm:"Dinero sin vender",sub:"Para el que se queda pero no llega.",rooms:[
+  {n:"501",t:"Financiación para reformar",pay:"exi",who:["d"],hotel:"Reforma sin vender ni meter socio.",you:"% de éxito sobre la financiación conseguida, con el bróker o el banco.",how:"Pregunta qué reforma tiene pendiente. Todos tienen una."},
+  {n:"502",t:"Renting de mobiliario y equipos",pay:"com",who:["e","d"],hotel:"Cambia camas, colchones o lavandería pagando una cuota, sin gastar de golpe.",you:"Comisión del proveedor de renting por cliente traído.",how:"Standbyme ya lo usa en Pi i Maragall: tienes el contacto."},
+  {n:"503",t:"Socio inversor minoritario",pay:"exi",who:["d"],hotel:"Entra dinero sin perder el control.",you:"% de éxito al cerrar la entrada del socio.",how:"El «Soñador con Planos» del quiz."},
+  {n:"504",t:"Ayudas y subvenciones",pay:"exi",who:["e","d"],hotel:"Dinero público para eficiencia energética, accesibilidad o digitalización.",you:"Parte del honorario de éxito de la consultora que lo tramita.",how:"Busca un gestor especializado y reparte con él. Tú solo traes el hotel."}
+ ]},
+ {n:"4",nm:"Tecnología y automatización",sub:"Lo tuyo. Cobro mensual.",rooms:[
+  {n:"401",t:"Recepción 24 h por WhatsApp con IA",pay:"mes",who:["e","d"],hotel:"Responde a huéspedes de noche y en tres idiomas. Puede cerrar el turno de noche.",you:"Montaje más cuota mensual por mantenerlo.",how:"Lo estáis haciendo en Ramblas. Usa ese caso como ejemplo."},
+  {n:"402",t:"Check-in online y apertura remota",pay:"fee",who:["e","d"],hotel:"Menos horas de recepción y llegadas a cualquier hora.",you:"Instalación y configuración, o comisión del proveedor de cerraduras.",how:"Pi i Maragall abre así: es tu demostración."},
+  {n:"403",t:"Ventas antes de llegar",pay:"mes",who:["e","d"],hotel:"Vende salida tardía, desayuno, parking o una botella de cava por email antes de la llegada.",you:"Un % de lo que se venda, cada mes.",how:"Fácil de medir: «¿cuánto vendes hoy en extras?»"},
+  {n:"404",t:"Automatizaciones del día a día",pay:"fee",who:["e","d"],hotel:"Facturas, respuestas a reseñas, emails y reservas sin copiar a mano.",you:"Precio por automatización, más mantenimiento opcional.",how:"Pregunta al encargado qué hace a mano cada día."},
+  {n:"405",t:"Programa de reservas y channel manager",pay:"com",who:["e","d"],hotel:"Deja el Excel o el libro de reservas.",you:"Comisión del proveedor si tiene programa de partners (confírmalo antes).",how:"Muchos hoteles pequeños aún no tienen. Standbyme usa Cloudbeds."}
+ ]},
+ {n:"3",nm:"Ventas y ocupación",sub:"Más clientes y más caros.",rooms:[
+  {n:"301",t:"Precios que se mueven solos",pay:"mes",who:["d"],hotel:"Cobra más cuando hay demanda y llena cuando no la hay.",you:"Cuota mensual, con el revenue manager de Standbyme detrás.",how:"Enséñale su precio en Booking un sábado de agosto y un martes de noviembre."},
+  {n:"302",t:"Web propia y reserva directa",pay:"fee",who:["e","d"],hotel:"Paga menos comisión a Booking por cada reserva directa.",you:"Montaje de la web y mantenimiento mensual.",how:"Calcula con él cuánto paga al año en comisiones."},
+  {n:"303",t:"Fotos y vídeo del hotel",pay:"fee",who:["e","d"],star:true,hotel:"Mejores fotos en Booking y Google. Se reserva más y más caro.",you:"Precio cerrado por sesión. Es tu oficio: imagen y vídeo.",how:"Llévalo hecho con un hotel de Standbyme como muestra. Abre la puerta del dueño."},
+  {n:"304",t:"Redes y contenido cada mes",pay:"mes",who:["e","d"],hotel:"Instagram y Google vivos sin que nadie del hotel tenga que hacerlo.",you:"Cuota mensual.",how:"Sigue a la sesión de fotos."},
+  {n:"305",t:"Grupos: empresas, ciclistas, retiros",pay:"com",who:["r","e","d"],hotel:"Llena temporada baja con grupos enteros.",you:"Comisión por grupo cerrado.",how:"En la Costa Brava hay clubs ciclistas y retiros de yoga buscando sitio fuera de temporada."},
+  {n:"306",t:"Ficha de Booking y Google, y reseñas",pay:"fee",who:["r","e","d"],hotel:"Sube en los listados y gana confianza.",you:"Precio cerrado por optimizar la ficha y montar las respuestas a reseñas.",how:"Busca su ficha delante de él y señala tres fallos."}
+ ]},
+ {n:"2",nm:"Costes que se pueden bajar",sub:"Ahorro que se ve en la factura.",rooms:[
+  {n:"201",t:"Factura de luz y gas",pay:"com",who:["e","d"],star:true,hotel:"Paga menos por lo mismo.",you:"Comisión de la comercializadora o un % del ahorro del primer año.",how:"Pide una factura. Es la petición más fácil de aceptar."},
+  {n:"202",t:"Placas solares y autoconsumo",pay:"com",who:["d"],hotel:"Baja la factura de forma permanente.",you:"Comisión del instalador por cliente traído.",how:"Hoteles con tejado grande y piscina."},
+  {n:"203",t:"Compras: amenities, lencería, limpieza",pay:"com",who:["e","d"],hotel:"Mejores precios comprando en volumen.",you:"Comisión del proveedor o de la central de compras.",how:"Une a varios hoteles de la ruta: juntos compran mejor."},
+  {n:"204",t:"Lavandería externa",pay:"com",who:["e","d"],hotel:"Menos personal y menos máquinas.",you:"Comisión de la lavandería industrial.",how:"Pregunta quién lava y cuánto le cuesta."},
+  {n:"205",t:"Seguros",pay:"com",who:["d"],hotel:"Mejor cobertura por menos.",you:"Comisión compartida con un corredor de seguros.",how:"Pide la póliza para que el corredor la revise."},
+  {n:"206",t:"Personal de temporada",pay:"fee",who:["e","d"],hotel:"Contrata a tiempo y sin buscar en abril a la desesperada.",you:"Honorario por persona contratada.",how:"Pregunta en noviembre por el verano."}
+ ]},
+ {n:"1",nm:"Espacios que hoy no facturan",sub:"El hotel cobra por lo que ya tiene.",rooms:[
+  {n:"101",t:"Day pass de piscina o spa",pay:"fee",who:["e","d"],hotel:"Cobra a gente de la zona por usar la piscina en días flojos.",you:"Alta y gestión en plataformas como Hotelbreak o Staycation.",how:"Hoteles con piscina y ocupación baja entre semana."},
+  {n:"102",t:"Cargador de coche eléctrico",pay:"com",who:["e","d"],hotel:"Atrae al cliente con coche eléctrico y cobra la recarga.",you:"Comisión del instalador u operador por hotel traído.",how:"Hay operadores que lo instalan para hoteles con programas de recarga en destino."},
+  {n:"103",t:"Consigna de equipaje",pay:"pue",who:["r","e"],hotel:"Cobra por cada maleta que guarda en el cuarto de equipajes.",you:"Poco o nada, pero es un sí fácil en recepción.",how:"Radical Storage, Bounce o Nannybag. Ideal en hoteles de pueblo con turismo de paso."},
+  {n:"104",t:"Salas, rodajes y sesiones de fotos",pay:"com",who:["e","d"],hotel:"Alquila salón, jardín o habitaciones por horas.",you:"Comisión por reserva traída.",how:"Hoteles con encanto: productoras buscan localizaciones."},
+  {n:"105",t:"Bodas pequeñas y celebraciones",pay:"com",who:["e","d"],hotel:"Hotel lleno un fin de semana entero con un solo cliente.",you:"Comisión por evento cerrado.",how:"Hoteles con jardín o vistas en la Costa Brava."}
+ ]},
+ {n:"0",nm:"Recepción · Para el huésped",sub:"Sí fácil. Gana el hotel y ganas tú.",rooms:[
+  {n:"001",t:"eSIM para huéspedes extranjeros",pay:"com",who:["r","e","d"],hotel:"Un servicio útil sin coste. El cliente tiene datos al llegar, con descuento.",you:"Comisión por cada eSIM vendida con tu enlace (programa de afiliados de Holafly, por ejemplo).",how:"Un QR en recepción y en el email de bienvenida."},
+  {n:"002",t:"Excursiones y actividades",pay:"com",who:["r","e","d"],hotel:"Recomienda planes sin gestionarlos.",you:"Comisión fija por cada venta (Civitatis tiene programa para empresas turísticas, con enlace, widget o página co-branding).",how:"Kayak por las Medes, visitas a Girona, rutas de vino del Empordà."},
+  {n:"003",t:"Traslados y taxis",pay:"com",who:["r","e"],hotel:"Resuelve la llegada desde el aeropuerto de Girona o Barcelona.",you:"Comisión por traslado reservado con tu enlace.",how:"Pregunta en recepción cuántas veces al día les piden un taxi."},
+  {n:"004",t:"Alquiler de bici, coche o barco",pay:"com",who:["r","e"],hotel:"Más servicio sin tener bicis propias.",you:"Comisión pactada con empresas de alquiler de la zona.",how:"Acuerdo directo con dos o tres proveedores por pueblo."},
+  {n:"005",t:"Restaurantes y bodegas de la zona",pay:"com",who:["r","e"],hotel:"Buenas recomendaciones, huésped contento.",you:"Comisión o invitación por cliente enviado.",how:"Sirve de excusa para conocer a todo el pueblo."},
+  {n:"006",t:"Guía digital del huésped",pay:"com",who:["r","e","d"],star:true,hotel:"Una guía bonita del hotel y la zona, gratis, con QR en recepción y habitaciones.",you:"Todo lo de esta planta junto: cada enlace de la guía lleva tu código. Cobras de todos los hoteles a la vez.",how:"Haces una plantilla, como SoyMrHotel, y la adaptas en una hora a cada hotel."}
+ ]}
+];
+
+const building=document.getElementById("building");
+let who="all", pay="all", open=null;
+
+// chips de cobro
+const prow=document.querySelector('[aria-label="Cómo cobras"]');
+Object.entries(PAY).forEach(([k,v])=>{
+  const b=document.createElement("button");b.type="button";b.className="chip";b.id="p-"+k;b.dataset.pay=k;b.setAttribute("aria-pressed","false");
+  b.title=v.d;b.innerHTML='<span class="dot" style="background:'+v.c+'"></span>'+v.l;prow.appendChild(b);
+});
+
+function roomBtn(r){
+  return '<button type="button" class="room'+(r.star?' star':'')+'" id="r'+r.n+'" data-n="'+r.n+'" aria-expanded="false">'+
+   '<span class="rn">'+r.n+(r.star?' · prueba':'')+'</span><span class="rt">'+r.t+'</span>'+
+   '<span class="rmeta"><span class="pay" style="background:'+PAY[r.pay].c+'">'+PAY[r.pay].l+'</span>'+
+   r.who.map(w=>'<span class="who">'+WHO[w]+'</span>').join("")+'</span></button>';
+}
+function render(){
+  building.innerHTML=FLOORS.map((f,i)=>
+   '<div class="floor"><div class="flr"><span class="num">'+f.n+'</span><span class="nm">'+f.nm+'</span><span class="sub">'+f.sub+'</span></div>'+
+   '<div class="rooms" id="f'+i+'">'+f.rooms.map(roomBtn).join("")+'</div></div>').join("");
+  building.querySelectorAll(".room").forEach(b=>b.addEventListener("click",()=>toggle(b.dataset.n)));
+  apply();
+}
+function find(n){for(const f of FLOORS)for(const r of f.rooms)if(r.n===n)return r;}
+function toggle(n){
+  const prev=building.querySelector(".detail"); if(prev) prev.remove();
+  building.querySelectorAll('.room[aria-expanded="true"]').forEach(b=>b.setAttribute("aria-expanded","false"));
+  if(open===n){open=null;return;}
+  open=n; const r=find(n), btn=document.getElementById("r"+n); btn.setAttribute("aria-expanded","true");
+  const d=document.createElement("div"); d.className="detail"; d.setAttribute("role","region"); d.setAttribute("aria-label","Detalle "+r.t);
+  d.innerHTML='<h3>'+r.n+' · '+r.t+'</h3>'+
+   '<div><p class="k">Qué gana el hotel</p><p>'+r.hotel+'</p></div>'+
+   '<div><p class="k">Qué ganas tú · '+PAY[r.pay].l.toLowerCase()+'</p><p>'+r.you+'</p></div>'+
+   '<div><p class="k">Cómo entrar</p><p>'+r.how+'</p></div>'+
+   '<div><p class="k">Quién te puede decir que sí</p><p>'+r.who.map(w=>WHO[w]).join(", ")+'</p></div>'+
+   '<button type="button" class="close">Cerrar</button>';
+  // colocar el detalle tras la fila de la habitación
+  const grid=btn.parentElement, items=[...grid.querySelectorAll(".room")];
+  const top=btn.offsetTop; let last=btn;
+  items.forEach(it=>{if(it.offsetTop===top) last=it;});
+  last.after(d);
+  d.querySelector(".close").addEventListener("click",()=>{toggle(n);btn.focus();});
+}
+function apply(){
+  let c=0,t=0;
+  FLOORS.forEach(f=>f.rooms.forEach(r=>{
+    t++; const ok=(who==="all"||r.who.includes(who))&&(pay==="all"||r.pay===pay);
+    if(ok)c++; const b=document.getElementById("r"+r.n); if(b) b.classList.toggle("dim",!ok);
+  }));
+  document.getElementById("count").innerHTML='<b>'+c+'</b> de '+t+' habitaciones encajan'+(who==="r"?'. En recepción, ofrece lo que no le cuesta nada al hotel.':'.');
+}
+document.querySelectorAll("[data-who]").forEach(b=>b.addEventListener("click",()=>{
+  who=b.dataset.who; document.querySelectorAll("[data-who]").forEach(x=>x.setAttribute("aria-pressed",x===b)); apply();}));
+prow.addEventListener("click",e=>{const b=e.target.closest("[data-pay]"); if(!b)return;
+  pay=b.dataset.pay; prow.querySelectorAll("[data-pay]").forEach(x=>x.setAttribute("aria-pressed",x===b)); apply();});
+render();
+})();
+</script>
+
+</body></html>
