@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapa 3, Viaje 60+ · conceptos y 5 destinos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a field notebook. Five concept cards first, then a scatter matrix where the five destinations sit, then range bars for price, premium and hours. GR trail stripes mark the selected destination. */
+:root{
+  --bg:#EEF1EC; --paper:#FFFFFF; --ink:#1E2A24; --muted:#5E6B64; --line:#D3DAD3;
+  --gr:#C8372D; --gr-soft:#F6DDD9; --moss:#2F5D43; --moss-soft:#DCE9DF; --ochre:#B8842A; --ochre-soft:#F3E7CF; --ice:#4E7FA8; --ice-soft:#DCE8F1;
+  --display:"Sora", "Segoe UI", system-ui, sans-serif;
+  --body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141A17; --paper:#1D2521; --ink:#EEF2EE; --muted:#A3AFA8; --line:#334039;
+  --gr:#F0695C; --gr-soft:#4A2622; --moss:#8FCBA6; --moss-soft:#24382C; --ochre:#E2B35E; --ochre-soft:#3E3320; --ice:#8DB8DE; --ice-soft:#223240; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141A17; --paper:#1D2521; --ink:#EEF2EE; --muted:#A3AFA8; --line:#334039;
+  --gr:#F0695C; --gr-soft:#4A2622; --moss:#8FCBA6; --moss-soft:#24382C; --ochre:#E2B35E; --ochre-soft:#3E3320; --ice:#8DB8DE; --ice-soft:#223240; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5}
+.wrap{max-width:1040px;margin:0 auto;padding:28px 20px 72px;display:flex;flex-direction:column;gap:44px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(28px,4.5vw,42px);font-weight:700}
+h2{font-size:clamp(21px,3vw,27px);font-weight:600}
+h3{font-size:17px;font-weight:600}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.lede{font-size:19px;color:var(--muted);max-width:68ch}
+.stripe{display:inline-block;width:34px;height:14px;background:repeating-linear-gradient(180deg,var(--gr) 0 7px,#fff 7px 14px);border:1px solid var(--line);vertical-align:middle;margin-right:10px;border-radius:2px}
+.sec{display:flex;flex-direction:column;gap:18px}
+.sechead{display:flex;flex-direction:column;gap:6px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px}
+.note{font-size:14px;color:var(--muted)}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
+
+/* concepts */
+.concepts{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+@media (max-width:980px){.concepts{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:640px){.concepts{grid-template-columns:1fr}}
+.concept{padding:16px;display:flex;flex-direction:column;gap:8px;border-top:4px solid var(--moss)}
+.concept .k{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.concept p{font-size:14.5px}
+.concept .claim{font-weight:600;font-size:15px}
+.concept.c2{border-top-color:var(--gr)} .concept.c3{border-top-color:var(--ochre)} .concept.c4{border-top-color:var(--ice)} .concept.c5{border-top-color:var(--gr)}
+
+/* matrix */
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+@media (max-width:900px){.stage{grid-template-columns:1fr}}
+.mapbox{padding:10px;overflow-x:auto}
+svg{display:block;width:100%;height:auto;min-width:560px;font-family:var(--body)}
+.quad{fill:var(--paper);stroke:var(--line);stroke-width:1}
+.quad.hot{fill:var(--gr-soft)}
+.qlabel{font-family:var(--display);font-weight:600;font-size:14px;fill:var(--ink)}
+.qsub{font-size:12px;fill:var(--muted)}
+.axis{font-family:var(--mono);font-size:11px;fill:var(--muted);letter-spacing:.06em}
+.dot{cursor:pointer}
+.dot circle{fill:var(--moss);stroke:var(--paper);stroke-width:3;transition:r .2s}
+.dot.sel circle{fill:var(--gr)}
+.dot text{font-size:13px;font-weight:600;fill:var(--ink)}
+.dot .sub{font-family:var(--mono);font-size:11px;font-weight:400;fill:var(--muted)}
+.panel{padding:18px;display:flex;flex-direction:column;gap:12px}
+.panel h2{font-size:20px}
+.panel .tag{display:inline-block;font-family:var(--mono);font-size:12px;padding:3px 9px;border-radius:999px;background:var(--ochre-soft);color:var(--ink);margin-right:6px}
+.panel dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14.5px}
+.panel dt{color:var(--muted)} .panel dd{margin:0;font-weight:600}
+.panel .why{font-size:14.5px;border-top:1px dashed var(--line);padding-top:10px}
+
+/* bars */
+.bars{display:flex;flex-direction:column;gap:10px;padding:18px}
+.row{display:grid;grid-template-columns:150px 1fr 150px;gap:14px;align-items:center;font-size:14.5px}
+@media (max-width:640px){.row{grid-template-columns:1fr;gap:6px}}
+.row .name{font-weight:600}
+.row .name small{display:block;font-family:var(--mono);font-size:11.5px;color:var(--muted);font-weight:400}
+.track{position:relative;height:22px;background:var(--bg);border-radius:6px;border:1px solid var(--line)}
+.range{position:absolute;top:3px;bottom:3px;border-radius:4px;background:var(--moss)}
+.range.gr{background:var(--gr)} .range.oc{background:var(--ochre)} .range.ice{background:var(--ice)}
+.tick{position:absolute;top:-18px;transform:translateX(-50%);font-family:var(--mono);font-size:11px;color:var(--muted)}
+.val{font-family:var(--mono);font-size:13px;color:var(--muted);text-align:right}
+.val b{color:var(--ink);font-weight:500}
+.scale{display:grid;grid-template-columns:150px 1fr 150px;gap:14px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.scale div{display:flex;justify-content:space-between}
+@media (max-width:640px){.scale{grid-template-columns:1fr}}
+
+/* language gap */
+.gap{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:760px){.gap{grid-template-columns:1fr}}
+.gapcard{padding:18px;display:flex;flex-direction:column;gap:12px}
+.pair{display:flex;flex-direction:column;gap:8px}
+.pair .lbl{display:flex;justify-content:space-between;font-size:14px}
+.pair .lbl b{font-family:var(--mono);font-weight:500}
+.pbar{height:26px;border-radius:6px;background:var(--moss)}
+.pbar.gr{background:var(--gr)}
+.big{font-family:var(--display);font-size:40px;font-weight:700;line-height:1}
+.big small{font-family:var(--body);font-size:15px;font-weight:400;color:var(--muted);margin-left:8px}
+
+/* idea */
+.idea{padding:22px;border-left:6px solid var(--gr);display:flex;flex-direction:column;gap:12px}
+.idea blockquote{margin:0;font-size:17px;text-wrap:pretty}
+.idea .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:760px){.idea .steps{grid-template-columns:1fr}}
+.step{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;font-size:14.5px}
+.step b{display:block;font-family:var(--mono);font-size:12px;color:var(--gr);margin-bottom:4px;font-weight:500}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:6px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header style="display:flex;flex-direction:column;gap:12px">
+  <span class="eyebrow">Investigación · 8 de noviembre de 2026</span>
+  <h1><span class="stripe" aria-hidden="true"></span>Qué paga de verdad el viajero de 60+: tiempo, certeza y fama</h1>
+  <p class="lede">Cinco conceptos que explican dónde gana dinero un intermediario en el viaje de senderismo con hotel con encanto, y una medición en cinco destinos de España para comprobarlo.</p>
+</header>
+
+<!-- 1. CONCEPTS -->
+<section class="sec" aria-labelledby="h-c">
+  <div class="sechead"><span class="eyebrow">1 · Conceptos</span><h2 id="h-c">Lo que se compra cuando se compra un paquete</h2></div>
+  <div class="concepts">
+    <article class="card concept c1"><span class="k">01</span><h3>Tiempo (T₁)</h3><p class="claim">El operador compra tiempo barato y lo vende caro.</p><p>El viajero necesita 20–40 h para montar el viaje solo. El operador diseña una vez y cada cliente le cuesta 2–4 h. Ese arbitraje es el margen del 20–40 %.</p></article>
+    <article class="card concept c2"><span class="k">02</span><h3>Certeza</h3><p class="claim">El 60+ paga por certeza, no por tiempo.</p><p>Un jubilado tiene horas. Lo que le falta es confianza y energía: webs en español, etapas sin saber si el hotel existe, nadie que avise si no llegas.</p></article>
+    <article class="card concept c3"><span class="k">03</span><h3>Fama = multiplicador</h3><p class="claim">La fama abarata tiempo y certeza para el viajero.</p><p>Más información gratis, más infraestructura, más prueba social. Margen del intermediario más bajo, volumen más alto. Desvalor: masificación, que este perfil rechaza.</p></article>
+    <article class="card concept c4"><span class="k">04</span><h3>Comunidad</h3><p class="claim">El intermediario que no cobra.</p><p>Asociaciones del Camino, foros, parroquias: hunden el tiempo y la incertidumbre gratis y le quitan negocio al operador sin querer.</p></article>
+    <article class="card concept c5"><span class="k">05</span><h3>Diferencial de idioma</h3><p class="claim">La fama comprime el margen solo donde el comprador puede comparar en su idioma.</p><p>Mismo producto: 450–550 € vendido en castellano, 900–1.000 € vendido en inglés.</p></article>
+  </div>
+</section>
+
+<!-- 2. MATRIX -->
+<section class="sec" aria-labelledby="h-m">
+  <div class="sechead"><span class="eyebrow">2 · Matriz</span><h2 id="h-m">Fama del destino frente a facilidad de hacerlo solo</h2><p class="note">Pulsa un destino para ver sus datos. Posiciones estimadas a partir de volumen de peregrinos, maletas sueltas, alojamiento reservable en inglés y transporte entre etapas.</p></div>
+  <div class="stage">
+    <div class="card mapbox"><svg id="matrix" viewBox="0 0 720 520" role="img" aria-label="Matriz fama frente a autoorganizabilidad con cinco destinos"></svg></div>
+    <aside class="card panel" id="panel" aria-live="polite"></aside>
+  </div>
+</section>
+
+<!-- 3. PREMIUM -->
+<section class="sec" aria-labelledby="h-p">
+  <div class="sechead"><span class="eyebrow">3 · Prima de certeza</span><h2 id="h-p">Cuánto más cuesta el paquete que montarlo igual por tu cuenta</h2><p class="note">Paquete autoguiado de 7 noches, habitación privada con desayuno y maletas, por persona compartiendo. Rango entre el operador más barato y el más caro observados. DIY estimado con los precios públicos de hotel y maletas.</p></div>
+  <div class="card bars" id="premium"></div>
+</section>
+
+<!-- 4. LANGUAGE GAP -->
+<section class="sec" aria-labelledby="h-g">
+  <div class="sechead"><span class="eyebrow">4 · Dos hallazgos</span><h2 id="h-g">El mismo producto, dos precios</h2></div>
+  <div class="gap">
+    <article class="card gapcard">
+      <h3>Diferencial de idioma · Camino Francés, 7 noches</h3>
+      <div class="pair"><div class="lbl"><span>Operador español, vende en castellano</span><b>450–550 €</b></div><div class="pbar" style="width:52%"></div></div>
+      <div class="pair"><div class="lbl"><span>Operador británico o australiano, vende en inglés</span><b>900–1.020 €</b></div><div class="pbar gr" style="width:100%"></div></div>
+      <p class="big">×2<small>misma cama, mismo Correos</small></p>
+      <p class="note">El 60+ de UK o US no compara con el operador español porque no lo encuentra ni lo entiende. Paga por certeza en su idioma y una marca que conoce. 350–450 € por persona que hoy no captura nadie en España.</p>
+    </article>
+    <article class="card gapcard">
+      <h3>Sub-producto premium · Camino Portugués costa, 7 noches</h3>
+      <div class="pair"><div class="lbl"><span>Versión estándar</span><b>desde £675</b></div><div class="pbar" style="width:30%"></div></div>
+      <div class="pair"><div class="lbl"><span>Versión "in Comfort" (hoteles con encanto)</span><b>desde £2.260</b></div><div class="pbar gr" style="width:100%"></div></div>
+      <p class="big">×3,3<small>misma ruta, mejores hoteles</small></p>
+      <p class="note">La fama abarata la certeza del producto estándar, no la del premium: los foros hablan de albergues, no de dónde cenar bien. Para hotel con encanto, la certeza vuelve a ser cara aunque el destino sea el más famoso.</p>
+    </article>
+  </div>
+</section>
+
+<!-- 5. TIME -->
+<section class="sec" aria-labelledby="h-t">
+  <div class="sechead"><span class="eyebrow">5 · Tiempo del viajero</span><h2 id="h-t">Horas para montarlo solo: dos grupos, no cinco</h2><p class="note">Estimación: número de reservas necesarias, idioma de las webs, existencia de un formulario de maletas y gestión diaria de taxis.</p></div>
+  <div class="card bars" id="time"></div>
+</section>
+
+<!-- 6. IDEA -->
+<section class="sec" aria-labelledby="h-i">
+  <div class="sechead"><span class="eyebrow">6 · Para tratar al final</span><h2 id="h-i">El negocio más barato que sale de la tabla</h2></div>
+  <article class="card idea">
+    <blockquote>No es un operador: es ser la capa que elimina el diferencial de idioma. Un medio o curador en inglés para el 60+ que presente los operadores y receptivos españoles buenos (los de 450–600 €) a quien hoy paga 900–1.000 € a un británico, cobrando una comisión de asesor del 10–16 % al español.</blockquote>
+    <div class="steps">
+      <div class="step"><b>El cliente</b>Ahorra 200–300 € y gana certeza en su idioma.</div>
+      <div class="step"><b>El operador español</b>Gana un cliente de UK o US que no tenía y paga una comisión normal del canal.</div>
+      <div class="step"><b>La capa 0/1</b>Se queda 50–90 € por viaje sin operar nada: ni licencias, ni contratación, ni inventario.</div>
+    </div>
+    <p class="note">Donde más certeza aporta: Tramuntana y Alpujarra, porque allí no hay forma de hacerlo solo sin coche ni maletas.</p>
+  </article>
+</section>
+
+<footer>
+  <span>Volumen: Oficina de Acogida al Peregrino, 2025. Maletas: Correos Paq Mochila 2026. Precios: webs de operadores y guías de presupuesto consultadas el 8 de noviembre de 2026. Autoorganizabilidad, coste DIY y horas son estimaciones para ordenar destinos, no mediciones.</span>
+</footer>
+</div>
+
+<script>
+(function(){
+  const D = [
+    {id:"frances", name:"Camino Francés", sub:"últimos 100 km", fama:97, diy:95, vol:"242.040 peregrinos; 161.901 salen de Sarria", maletas:"Sí, todo el año, 30 € el tramo", hotel:"Pensión 45–70 €/hab; hotel ~90 €", bus:"Bueno", diyCost:[310,380], pack:[450,1020], prima:[1.3,2.7], ops:"Docenas", t1:[6,10], quad:"Famoso y fácil",
+     why:"Mucho volumen y margen fino en el extremo barato: el operador español vende desde 450 €. El británico, el mismo producto, a 900–1.000 €."},
+    {id:"portugues", name:"Portugués costa", sub:"Baiona–Santiago", fama:80, diy:85, vol:"89.512 peregrinos, la ruta que más crece", maletas:"Sí, en temporada desde A Guarda", hotel:"Similar al Francés", bus:"Bueno", diyCost:[350,420], pack:[625,970], prima:[1.6,2.5], ops:"10+", t1:[6,10], quad:"Famoso y fácil",
+     why:"Sigue al Francés con unos años de retraso. La versión con hoteles con encanto se vende a ×3,3 la estándar."},
+    {id:"primitivo", name:"Camino Primitivo", sub:"Lugo–Santiago", fama:45, diy:60, vol:"27.873 peregrinos", maletas:"Sí, en temporada desde Oviedo", hotel:"Casas rurales, menos oferta", bus:"Regular", diyCost:[230,300], pack:[450,920], prima:[1.6,3.3], ops:"~10", t1:[10,15], quad:"Intermedio",
+     why:"El 'Camino tranquilo' que los operadores venden como escasez dentro de la marca Camino. Etapas largas y poca cama: menos fácil de lo que parece."},
+    {id:"tramuntana", name:"Tramuntana GR221", sub:"Mallorca", fama:62, diy:50, vol:"UNESCO; refugios llenos con 4 meses; sin cifra oficial", maletas:"No existe suelto: solo vía operador (taxi)", hotel:"Refugio 14 €/cama; hotel 80–250 €/hab", bus:"Bus + tren de Sóller", diyCost:[550,650], pack:[650,1030], prima:[1.1,1.7], ops:"10+", t1:[15,25], quad:"Famoso y difícil (para hotel)",
+     why:"Para un joven con saco es fácil. Para un 60+ que quiere hotel y no cargar, dependencia total del operador: no hay maletas sueltas y los hoteles de Deià y Valldemossa se agotan."},
+    {id:"alpujarra", name:"Alpujarra", sub:"Capileira–Bérchules", fama:22, diy:25, vol:"Sin cifra; conocida en UK, casi nada en US", maletas:"No existe suelto: solo vía operador, 3 de 7 días", hotel:"Hotel rural 42–95 €/hab", bus:"2–3 buses/día; coche casi imprescindible", diyCost:[290,330], pack:[675,1000], prima:[2.1,3.1], ops:"~10, casi todos UK", t1:[15,25], quad:"Poco conocido y difícil",
+     why:"La prima más alta y estable: nadie puede compararla con un DIY porque el DIY casi no existe sin coche. Pero hay que crear el deseo."}
+  ];
+  const fmt = n => n.toLocaleString("es-ES");
+
+  /* matrix */
+  const svg = document.getElementById("matrix"), NS = "http://www.w3.org/2000/svg";
+  const el = (t,a) => { const e = document.createElementNS(NS,t); for (const k in a) e.setAttribute(k,a[k]); return e; };
+  const L = 70, R = 700, T = 30, B = 460; // plot box
+  const X = f => L + (R-L)*f/100, Y = d => B - (B-T)*d/100;
+  const midX = X(50), midY = Y(50);
+  // quadrants
+  [[L,T,midX,midY,"Desconocido y fácil","poca demanda · crear la fama",false],[midX,T,R,midY,"Famoso y fácil","volumen · margen fino",false],[L,midY,midX,B,"Desconocido y difícil","margen alto · poca demanda",false],[midX,midY,R,B,"Famoso y difícil","el mejor sitio para el intermediario",true]].forEach(([x1,y1,x2,y2,t,s,hot]) => {
+    const r = el("rect",{x:x1,y:y1,width:x2-x1,height:y2-y1}); r.setAttribute("class","quad"+(hot?" hot":"")); svg.appendChild(r);
+    const tt = el("text",{x:x1+12,y:y1+22}); tt.setAttribute("class","qlabel"); tt.textContent = t; svg.appendChild(tt);
+    const ss = el("text",{x:x1+12,y:y1+40}); ss.setAttribute("class","qsub"); ss.textContent = s; svg.appendChild(ss);
+  });
+  // axes labels
+  const ax = el("text",{x:(L+R)/2,y:500,"text-anchor":"middle"}); ax.setAttribute("class","axis"); ax.textContent = "FAMA DEL DESTINO PARA EL VIAJERO DE UK Y EE. UU. →"; svg.appendChild(ax);
+  const ay = el("text",{x:18,y:(T+B)/2,"text-anchor":"middle",transform:`rotate(-90 18 ${(T+B)/2})`}); ay.setAttribute("class","axis"); ay.textContent = "FACILIDAD DE HACERLO SOLO →"; svg.appendChild(ay);
+  const dots = {};
+  D.forEach(d => {
+    const g = el("g",{tabindex:"0",role:"button","aria-label":d.name}); g.setAttribute("class","dot");
+    const cx = X(d.fama), cy = Y(d.diy);
+    g.appendChild(el("circle",{cx,cy,r:11}));
+    const anchor = d.fama > 70 ? "end" : "start", tx = d.fama > 70 ? cx-16 : cx+16;
+    const t = el("text",{x:tx,y:cy+ (d.id==="portugues" ? -14 : 4),"text-anchor":anchor}); t.textContent = d.name; g.appendChild(t);
+    const s = el("text",{x:tx,y:cy+ (d.id==="portugues" ? 1 : 19),"text-anchor":anchor}); s.setAttribute("class","sub"); s.textContent = `fama ${d.fama} · DIY ${d.diy}`; g.appendChild(s);
+    g.addEventListener("click", () => select(d.id));
+    g.addEventListener("keydown", e => { if (e.key==="Enter"||e.key===" "){ e.preventDefault(); select(d.id); } });
+    svg.appendChild(g); dots[d.id] = g;
+  });
+  const panel = document.getElementById("panel");
+  let sel = "tramuntana";
+  function select(id){
+    sel = id; D.forEach(d => dots[d.id].classList.toggle("sel", d.id===id));
+    const d = D.find(x => x.id===id);
+    panel.innerHTML = `<span class="eyebrow">Destino</span><h2>${d.name} <span style="font-family:var(--mono);font-size:13px;color:var(--muted);font-weight:400">${d.sub}</span></h2>
+      <div><span class="tag">${d.quad}</span><span class="tag">prima ×${d.prima[0]}–×${d.prima[1]}</span></div>
+      <dl><dt>Volumen</dt><dd>${d.vol}</dd><dt>Maletas sueltas</dt><dd>${d.maletas}</dd><dt>Alojamiento DIY</dt><dd>${d.hotel}</dd><dt>Transporte</dt><dd>${d.bus}</dd><dt>DIY estimado</dt><dd>${fmt(d.diyCost[0])}–${fmt(d.diyCost[1])} €</dd><dt>Paquete</dt><dd>${fmt(d.pack[0])}–${fmt(d.pack[1])} €</dd><dt>Operadores en inglés</dt><dd>${d.ops}</dd><dt>Horas para montarlo</dt><dd>${d.t1[0]}–${d.t1[1]} h</dd></dl>
+      <p class="why">${d.why}</p>`;
+  }
+  select(sel);
+
+  /* premium bars: scale ×1 to ×3.5 */
+  const prem = document.getElementById("premium");
+  const pmin = 1, pmax = 3.5, px = v => ((v-pmin)/(pmax-pmin))*100;
+  prem.innerHTML = `<div class="scale"><div></div><div><span>×1 (igual que DIY)</span><span>×2</span><span>×3</span><span>×3,5</span></div><div></div></div>` +
+    D.map(d => `<div class="row"><div class="name">${d.name}<small>${d.sub}</small></div><div class="track"><div class="range ${d.prima[1]>=3?"gr":d.prima[1]>=2.5?"oc":""}" style="left:${px(d.prima[0])}%;width:${px(d.prima[1])-px(d.prima[0])}%"></div></div><div class="val">DIY <b>${fmt(d.diyCost[0])}–${fmt(d.diyCost[1])} €</b><br>paquete <b>${fmt(d.pack[0])}–${fmt(d.pack[1])} €</b></div></div>`).join("");
+
+  /* time bars: 0–30 h */
+  const tm = document.getElementById("time");
+  const tx = v => (v/30)*100;
+  tm.innerHTML = `<div class="scale"><div></div><div><span>0 h</span><span>10 h</span><span>20 h</span><span>30 h</span></div><div></div></div>` +
+    D.map(d => `<div class="row"><div class="name">${d.name}<small>${d.sub}</small></div><div class="track"><div class="range ${d.t1[1]>=20?"gr":"ice"}" style="left:${tx(d.t1[0])}%;width:${tx(d.t1[1])-tx(d.t1[0])}%"></div></div><div class="val"><b>${d.t1[0]}–${d.t1[1]} h</b>${d.t1[1]>=20?"<br>+ taxis cada día":"<br>formulario de maletas online"}</div></div>`).join("");
+})();
+</script>
+</body>
+</html>

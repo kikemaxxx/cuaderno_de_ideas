@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapa 1, de la cadena del viaje 60+</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a trail map read top to bottom. The traveller starts at the top, the services sit at the bottom, and the layers in between are waymarks. Red-and-white GR trail stripes mark the layers a chosen route passes through. */
+:root{
+  --bg:#EEF1EC; --paper:#FFFFFF; --ink:#1E2A24; --muted:#5E6B64; --line:#D3DAD3;
+  --gr:#C8372D; --gr-soft:#F6DDD9; --moss:#2F5D43; --moss-soft:#DCE9DF; --ochre:#B8842A; --ochre-soft:#F3E7CF;
+  --display:"Sora", "Segoe UI", system-ui, sans-serif;
+  --body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141A17; --paper:#1D2521; --ink:#EEF2EE; --muted:#A3AFA8; --line:#334039;
+  --gr:#F0695C; --gr-soft:#4A2622; --moss:#8FCBA6; --moss-soft:#24382C; --ochre:#E2B35E; --ochre-soft:#3E3320; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141A17; --paper:#1D2521; --ink:#EEF2EE; --muted:#A3AFA8; --line:#334039;
+  --gr:#F0695C; --gr-soft:#4A2622; --moss:#8FCBA6; --moss-soft:#24382C; --ochre:#E2B35E; --ochre-soft:#3E3320; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5}
+.wrap{max-width:1040px;margin:0 auto;padding:28px 20px 72px;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(28px,4.5vw,42px);font-weight:700}
+h2{font-size:clamp(21px,3vw,27px);font-weight:600}
+h3{font-size:17px;font-weight:600}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.lede{font-size:19px;color:var(--muted);max-width:68ch}
+.stripe{display:inline-block;width:34px;height:14px;background:repeating-linear-gradient(180deg,var(--gr) 0 7px,#fff 7px 14px);border:1px solid var(--line);vertical-align:middle;margin-right:10px;border-radius:2px}
+.sec{display:flex;flex-direction:column;gap:18px}
+.sechead{display:flex;flex-direction:column;gap:6px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px}
+.note{font-size:14px;color:var(--muted)}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
+
+/* header */
+header{display:flex;flex-direction:column;gap:12px}
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.tag{font-family:var(--mono);font-size:12.5px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--paper)}
+
+/* journey */
+.journey{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stage{padding:16px;display:flex;flex-direction:column;gap:10px;position:relative}
+.stage .k{font-family:var(--mono);font-size:12px;color:var(--gr)}
+.stage ul{margin:0;padding-left:18px;font-size:15px;display:grid;gap:4px}
+.stage .stat{border-top:1px dashed var(--line);padding-top:8px;font-size:14px;color:var(--muted)}
+.stage .stat b{font-family:var(--mono);color:var(--ink);font-weight:500}
+@media (max-width:820px){.journey{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:480px){.journey{grid-template-columns:1fr}}
+
+/* routes */
+.routes{display:flex;flex-wrap:wrap;gap:8px}
+.route{padding:9px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-weight:600;font-size:15px;display:flex;gap:8px;align-items:center}
+.route .n{font-family:var(--mono);font-weight:500;font-size:13px;color:var(--muted)}
+.route[aria-pressed="true"]{border-color:var(--gr);background:var(--gr-soft)}
+.route[aria-pressed="true"] .n{color:var(--gr)}
+
+/* chain */
+.chain{display:grid;grid-template-columns:1fr;gap:0}
+.end{padding:14px 18px;border-radius:10px;background:var(--moss-soft);border:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.end strong{font-family:var(--display);font-size:18px}
+.end span{font-size:14px;color:var(--muted)}
+.layer{display:grid;grid-template-columns:44px 1fr;gap:0;position:relative}
+.rail{position:relative}
+.rail::before{content:"";position:absolute;left:21px;top:0;bottom:0;width:2px;background:var(--line)}
+.mark{position:absolute;left:4px;top:50%;transform:translateY(-50%);width:34px;height:14px;border-radius:2px;border:1px solid var(--line);background:var(--bg);transition:background .25s}
+.layer.on .mark{background:repeating-linear-gradient(180deg,var(--gr) 0 7px,#fff 7px 14px)}
+.lcard{margin:6px 0;border:1px solid var(--line);background:var(--paper);border-radius:10px;overflow:hidden;transition:border-color .25s,opacity .25s}
+.layer.on .lcard{border-color:var(--gr)}
+.layer.off .lcard{opacity:.45}
+.lhead{width:100%;text-align:left;background:none;border:none;color:var(--ink);padding:14px 18px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+.lhead .t{display:flex;flex-direction:column;gap:2px}
+.lhead .t small{font-size:14px;color:var(--muted)}
+.lhead .cut{font-family:var(--mono);font-size:13px;color:var(--muted);white-space:nowrap}
+.lhead .cut b{color:var(--ink);font-weight:500}
+.lhead .chev{width:22px;height:22px;display:grid;place-items:center;color:var(--muted);transition:transform .2s}
+.lcard[open] .chev{transform:rotate(180deg)}
+.lbody{display:none;padding:0 18px 16px;border-top:1px dashed var(--line);margin-top:0}
+.lcard[open] .lbody{display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;padding-top:14px}
+.lbody h4{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px;font-weight:500}
+.lbody p,.lbody li{font-size:15px}
+.lbody ul{margin:0;padding-left:18px;display:grid;gap:3px}
+.lbody .full{grid-column:1/-1}
+.pill{display:inline-block;font-family:var(--mono);font-size:12px;padding:3px 8px;border-radius:999px;background:var(--ochre-soft);color:var(--ink)}
+@media (max-width:640px){.lcard[open] .lbody{grid-template-columns:1fr}.lhead{grid-template-columns:1fr}.lhead .cut{white-space:normal}.lhead .chev{display:none}}
+
+/* summary + money bar */
+.summary{display:grid;grid-template-columns:1.1fr 1fr;gap:14px}
+@media (max-width:760px){.summary{grid-template-columns:1fr}}
+.sum{padding:18px;display:flex;flex-direction:column;gap:12px}
+.big{font-family:var(--display);font-size:44px;font-weight:700;line-height:1}
+.big small{font-family:var(--body);font-size:16px;font-weight:400;color:var(--muted);margin-left:8px}
+.bar{display:flex;height:34px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.seg{display:grid;place-items:center;font-family:var(--mono);font-size:12px;color:#fff;transition:flex .4s ease;min-width:0;overflow:hidden;white-space:nowrap}
+.seg.s-adv{background:#7A4E9E}.seg.s-mkt{background:#2E6E9E}.seg.s-op{background:var(--gr)}.seg.s-dmc{background:var(--ochre)}.seg.s-lug{background:#6B7D74}.seg.s-sup{background:var(--moss)}
+.legend{display:flex;flex-wrap:wrap;gap:10px 16px;font-size:14px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.legend .l-adv::before{background:#7A4E9E}.legend .l-mkt::before{background:#2E6E9E}.legend .l-op::before{background:var(--gr)}.legend .l-dmc::before{background:var(--ochre)}.legend .l-lug::before{background:#6B7D74}.legend .l-sup::before{background:var(--moss)}
+
+/* services */
+.services{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:820px){.services{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:480px){.services{grid-template-columns:1fr}}
+.svc{padding:16px;display:flex;flex-direction:column;gap:8px}
+.svc h3{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.svc .who{font-family:var(--mono);font-size:12px;color:var(--gr)}
+.svc p{font-size:15px}
+.svc .inpack{font-size:13px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px}
+
+/* takeaways */
+.take{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:820px){.take{grid-template-columns:1fr}}
+.tk{padding:18px;display:flex;flex-direction:column;gap:8px;border-top:4px solid var(--moss)}
+.tk.warn{border-top-color:var(--ochre)}
+.tk.hot{border-top-color:var(--gr)}
+.tk p{font-size:15px}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:6px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Mapa de la cadena de valor</span>
+  <h1><span class="stripe" aria-hidden="true"></span>Del viajero de 60+ al hotel, el guía y la mesa</h1>
+  <p class="lede">Viajero de Reino Unido o Estados Unidos, mayor de 60, que quiere caminar, estar en la naturaleza, dormir en hoteles pequeños con encanto y comer bien. Qué usa para encontrarlo y cuántas empresas hay entre él y lo que finalmente disfruta.</p>
+  <div class="tags">
+    <span class="tag">UK + US · 60+</span><span class="tag">senderismo · naturaleza</span><span class="tag">hotel con encanto</span><span class="tag">gastronomía</span><span class="tag">destino: España</span>
+  </div>
+</header>
+
+<!-- 1. JOURNEY -->
+<section class="sec" aria-labelledby="h-journey">
+  <div class="sechead">
+    <span class="eyebrow">1 · Cómo llega el viajero a la compra</span>
+    <h2 id="h-journey">Cuatro momentos, cuatro juegos de herramientas</h2>
+  </div>
+  <div class="journey">
+    <article class="card stage">
+      <span class="k">01 · Inspiración</span>
+      <h3>Nace la idea</h3>
+      <ul>
+        <li>Prensa y suplementos de viajes</li>
+        <li>Rankings de consumidores y asociaciones de mayores</li>
+        <li>Foros y grupos de viajeros</li>
+        <li>Recomendación de amigos que ya lo hicieron</li>
+        <li>Newsletters y creadores</li>
+      </ul>
+      <p class="stat">Las comunidades y reseñas influyen en <b>~44 %</b> de los 60–75 activos online</p>
+    </article>
+    <article class="card stage">
+      <span class="k">02 · Investigación</span>
+      <h3>Valida y compara</h3>
+      <ul>
+        <li>Webs de hoteles y aerolíneas</li>
+        <li>Grandes webs de reservas</li>
+        <li>Reseñas (TripAdvisor, Google)</li>
+        <li>Agregadores de viajes multi-día</li>
+        <li>Asistentes de IA, en auge</li>
+      </ul>
+      <p class="stat"><b>87 %</b> usa webs de hotel · <b>73 %</b> grandes webs de reservas · IA pasó de <b>8 → 16 %</b> en un año</p>
+    </article>
+    <article class="card stage">
+      <span class="k">03 · Reserva</span>
+      <h3>Compra el paquete</h3>
+      <ul>
+        <li>Directo con un operador especialista (web o teléfono)</li>
+        <li>A través de un asesor de viajes</li>
+        <li>Marketplace de tours</li>
+        <li>Vuelo casi siempre aparte, con la aerolínea</li>
+      </ul>
+      <p class="stat"><b>84 %</b> reserva online · <b>58 %</b> sigue usando agente · <b>48 %</b> usa agente para itinerarios complejos</p>
+    </article>
+    <article class="card stage">
+      <span class="k">04 · En ruta</span>
+      <h3>Camina y come</h3>
+      <ul>
+        <li>App del operador con GPS y notas de etapa</li>
+        <li>Teléfono de asistencia 24/7</li>
+        <li>Equipaje que viaja solo de hotel a hotel</li>
+        <li>Cenas incluidas o recomendadas por el hotel</li>
+      </ul>
+      <p class="stat">Compra <b>3–6 meses</b> antes; prefiere temporada media y clima suave</p>
+    </article>
+  </div>
+</section>
+
+<!-- 2. CHAIN -->
+<section class="sec" aria-labelledby="h-chain">
+  <div class="sechead">
+    <span class="eyebrow">2 · La cadena</span>
+    <h2 id="h-chain">Elige una ruta de compra y mira por qué capas pasa el dinero</h2>
+    <p class="note">Las franjas rojas y blancas marcan las capas activas. Pulsa una capa para ver qué hace y cómo cobra.</p>
+  </div>
+
+  <div class="routes" role="group" aria-label="Ruta de compra">
+    <button class="route" data-route="direct" aria-pressed="false">Por su cuenta <span class="n">0–1 intermediarios</span></button>
+    <button class="route" data-route="operator" aria-pressed="true">Operador autoguiado <span class="n">2–3</span></button>
+    <button class="route" data-route="advisor" aria-pressed="false">Vía asesor de viajes <span class="n">3–4</span></button>
+    <button class="route" data-route="market" aria-pressed="false">Marketplace + asesor <span class="n">4–5</span></button>
+  </div>
+
+  <div class="chain">
+    <div class="end"><strong>Viajero 60+</strong><span>Paga el precio final del paquete, más el vuelo aparte</span></div>
+
+    <div class="layer" data-layer="media">
+      <div class="rail"><span class="mark"></span></div>
+      <details class="lcard">
+        <summary class="lhead">
+          <span class="t"><span>0 · Medios y comunidades</span><small>Prensa, rankings, foros, newsletters, creadores</small></span>
+          <span class="cut">cobra a terceros</span>
+          <span class="chev" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="lbody">
+          <div><h4>Qué hace</h4><p>Siembra la idea y da confianza. No vende el viaje, pero decide a quién se le pide.</p></div>
+          <div><h4>Cómo cobra</h4><p>Publicidad, afiliación por lead o venta, suscripción. El viajero no le paga nada directamente.</p></div>
+          <div class="full"><h4>Lo que importa</h4><p>Es la capa más barata de construir y la única sin un actor dominante para este perfil concreto (60+, caminar, hotel pequeño, comer bien, España).</p></div>
+        </div>
+      </details>
+    </div>
+
+    <div class="layer" data-layer="advisor">
+      <div class="rail"><span class="mark"></span></div>
+      <details class="lcard">
+        <summary class="lhead">
+          <span class="t"><span>1 · Asesor o agencia minorista</span><small>Aconseja y vende, no opera</small></span>
+          <span class="cut">se queda <b>10–16 %</b></span>
+          <span class="chev" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="lbody">
+          <div><h4>Qué hace</h4><p>Traduce lo que quiere el cliente a un operador concreto. Sigue acompañando durante el viaje.</p></div>
+          <div><h4>Cómo cobra</h4><p>Comisión del operador u hotel, a veces un honorario al cliente. En redes de lujo, las relaciones preferentes con hoteles añaden ventajas al cliente.</p></div>
+          <div class="full"><h4>Lo que importa</h4><p>Muy relevante en Estados Unidos y para itinerarios complejos. No tiene inventario: su activo es la confianza.</p></div>
+        </div>
+      </details>
+    </div>
+
+    <div class="layer" data-layer="market">
+      <div class="rail"><span class="mark"></span></div>
+      <details class="lcard">
+        <summary class="lhead">
+          <span class="t"><span>2 · Marketplace de tours</span><small>Escaparate de viajes multi-día</small></span>
+          <span class="cut">comisión al operador</span>
+          <span class="chev" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="lbody">
+          <div><h4>Qué hace</h4><p>Agrupa miles de paquetes de operadores y permite compararlos. Algunos abren su catálogo a agentes.</p></div>
+          <div><h4>Cómo cobra</h4><p>Comisión sobre la venta, pagada por el operador.</p></div>
+          <div class="full"><h4>Lo que importa</h4><p>Capa opcional. Útil para descubrir, pero el 60+ suele acabar comprando al operador o a su asesor.</p></div>
+        </div>
+      </details>
+    </div>
+
+    <div class="layer" data-layer="operator">
+      <div class="rail"><span class="mark"></span></div>
+      <details class="lcard">
+        <summary class="lhead">
+          <span class="t"><span>3 · Operador emisor especialista</span><small>Diseña el paquete y contrata el terreno</small></span>
+          <span class="cut">margen <b>20–40 %</b></span>
+          <span class="chev" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="lbody">
+          <div><h4>Qué hace</h4><p>Elige etapas, hoteles, maletas y notas de ruta. Vende guiado (grupo con guía) o autoguiado (solo logística). Tiene la relación con el cliente.</p></div>
+          <div><h4>Cómo cobra</h4><p>La diferencia entre lo que paga a proveedores y receptivo y lo que cobra al cliente. Compra a tarifa neta.</p></div>
+          <div class="full"><h4>Lo que importa</h4><p>Aquí se concentra el dinero y la marca. Los grandes del nicho facturan decenas o cientos de millones; los agregadores de hoteles, uno o pocos millones.</p></div>
+        </div>
+      </details>
+    </div>
+
+    <div class="layer" data-layer="dmc">
+      <div class="rail"><span class="mark"></span></div>
+      <details class="lcard">
+        <summary class="lhead">
+          <span class="t"><span>4 · Receptivo en destino (DMC)</span><small>Opera sobre el terreno para el operador</small></span>
+          <span class="cut">se queda <b>10–25 %</b></span>
+          <span class="chev" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="lbody">
+          <div><h4>Qué hace</h4><p>Contrata hoteles, guías, taxis y maletas en España; resuelve incidencias en el idioma local; a veces también vende directo con licencia de agencia.</p></div>
+          <div><h4>Cómo cobra</h4><p>Margen sobre tarifas netas, honorarios de gestión. Cotiza neto al operador, que luego remarca.</p></div>
+          <div class="full"><h4>Lo que importa</h4><p>Invisible para el viajero. El operador extranjero casi nunca llega al hotel sin pasar por aquí.</p></div>
+        </div>
+      </details>
+    </div>
+
+    <div class="layer" data-layer="hotelagg">
+      <div class="rail"><span class="mark"></span></div>
+      <details class="lcard">
+        <summary class="lhead">
+          <span class="t"><span>5 · Agregadores de alojamiento</span><small>Clubes de hoteles, portales rurales, grandes webs de reservas</small></span>
+          <span class="cut">cuota o <b>~15 %</b></span>
+          <span class="chev" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="lbody">
+          <div><h4>Qué hace</h4><p>Hace visibles los hoteles pequeños al cliente que reserva por su cuenta. Un club cobra cuota al hotel; una web de reservas, comisión por noche.</p></div>
+          <div><h4>Cómo cobra</h4><p>Cuota anual del alojamiento, o comisión sobre la reserva.</p></div>
+          <div class="full"><h4>Lo que importa</h4><p>Solo entra en juego cuando el viajero no compra paquete. Los operadores y receptivos no pasan por aquí: contratan al hotel directamente.</p></div>
+        </div>
+      </details>
+    </div>
+
+    <div class="layer" data-layer="luggage">
+      <div class="rail"><span class="mark"></span></div>
+      <details class="lcard">
+        <summary class="lhead">
+          <span class="t"><span>6 · Logística especializada</span><small>Transporte de maletas etapa a etapa, transfers</small></span>
+          <span class="cut"><b>5–10 €</b> por bolsa y día</span>
+          <span class="chev" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="lbody">
+          <div><h4>Qué hace</h4><p>Recoge la maleta por la mañana y la deja en el siguiente hotel. Es lo que convierte una caminata en unas vacaciones para un 60+.</p></div>
+          <div><h4>Cómo cobra</h4><p>Precio por bolsa y etapa; el operador lo empaqueta dentro del precio total.</p></div>
+        </div>
+      </details>
+    </div>
+
+    <div class="end"><strong>Proveedores finales</strong><span>Hotel con encanto · guía local · taxi y tren · restaurante y bodega · seguro</span></div>
+  </div>
+
+  <div class="summary">
+    <div class="card sum">
+      <span class="eyebrow">Ruta elegida</span>
+      <p class="big"><span id="count">2–3</span><small>empresas entre el viajero y el hotel</small></p>
+      <p id="desc" class="note">El caso típico británico: compra al operador autoguiado, que trabaja con un receptivo español y una empresa de maletas. El vuelo lo reserva aparte.</p>
+    </div>
+    <div class="card sum">
+      <span class="eyebrow">De cada 100 € que paga el viajero (orientativo)</span>
+      <div class="bar" id="bar" aria-label="Reparto orientativo del precio">
+        <div class="seg s-mkt" data-k="mkt">Marketplace</div>
+        <div class="seg s-adv" data-k="adv">Asesor</div>
+        <div class="seg s-op" data-k="op">Operador</div>
+        <div class="seg s-dmc" data-k="dmc">Receptivo</div>
+        <div class="seg s-lug" data-k="lug">Maletas</div>
+        <div class="seg s-sup" data-k="sup">Hotel, guía, mesa</div>
+      </div>
+      <div class="legend"><span class="l-mkt">Marketplace</span><span class="l-adv">Asesor</span><span class="l-op">Operador</span><span class="l-dmc">Receptivo</span><span class="l-lug">Maletas</span><span class="l-sup">Proveedores finales</span></div>
+      <p class="note">Puntos medios de los rangos de comisión y margen del sector. Sirve para comparar rutas, no como cuenta de resultados.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 3. SERVICES -->
+<section class="sec" aria-labelledby="h-svc">
+  <div class="sechead">
+    <span class="eyebrow">3 · Servicio a servicio</span>
+    <h2 id="h-svc">Quién vende realmente cada pieza del viaje</h2>
+  </div>
+  <div class="services">
+    <article class="card svc"><h3>Vuelo <span class="who">aerolínea</span></h3><p>Casi siempre fuera del paquete. El viajero lo compra directo en la web de la aerolínea, o su asesor lo gestiona. Los operadores europeos venden "sin vuelo" y empujan el tren.</p><p class="inpack">En el paquete: rara vez</p></article>
+    <article class="card svc"><h3>Hotel con encanto <span class="who">operador / receptivo</span></h3><p>Se contrata a tarifa neta, tras años de relación. El hotel pequeño no llega al 60+ extranjero por su web: llega porque un operador lo eligió como fin de etapa.</p><p class="inpack">En el paquete: siempre</p></article>
+    <article class="card svc"><h3>Maletas <span class="who">empresa local</span></h3><p>Subcontratada por el operador o el receptivo. Suelto cuesta 5–10 € por bolsa y día; empaquetado es parte del valor que justifica el precio del operador.</p><p class="inpack">En el paquete: casi siempre</p></article>
+    <article class="card svc"><h3>Guía <span class="who">autónomo / receptivo</span></h3><p>Solo en producto guiado. Guías locales con idioma, contratados por el receptivo o en plantilla de operadores grandes. En autoguiado lo sustituye la app con GPS y el teléfono 24/7.</p><p class="inpack">En el paquete: solo guiado</p></article>
+    <article class="card svc"><h3>Transporte local <span class="who">receptivo / taxi / tren</span></h3><p>Transfers de llegada, traslados de etapa cuando un tramo no interesa caminarlo. Los reserva el receptivo; el tren de larga distancia, el viajero o su asesor.</p><p class="inpack">En el paquete: parcial</p></article>
+    <article class="card svc"><h3>Gastronomía <span class="who">la capa menos resuelta</span></h3><p>Cenas incluidas en media pensión o dejadas al viajero. Bodegas y experiencias se venden sueltas en webs de actividades con comisiones del 20–25 %, o las recomienda el hotel. Los asesores de lujo señalan aquí la demanda más desatendida.</p><p class="inpack">En el paquete: a medias</p></article>
+  </div>
+</section>
+
+<!-- 4. TAKEAWAYS -->
+<section class="sec" aria-labelledby="h-take">
+  <div class="sechead">
+    <span class="eyebrow">4 · Lectura</span>
+    <h2 id="h-take">Dónde está el dinero y dónde está el hueco</h2>
+  </div>
+  <div class="take">
+    <article class="card tk hot"><h3>El dinero está en la capa 3</h3><p>El operador tiene al cliente, fija el precio y compra neto. Todo lo demás cobra una comisión de él o le vende a él.</p></article>
+    <article class="card tk"><h3>El hueco está en la capa 0</h3><p>No hay un medio ni comunidad dedicada a este perfil exacto. Es la capa más barata de construir y se monetiza derivando al operador y al hotel, sin operar nada.</p></article>
+    <article class="card tk warn"><h3>Lo que no construir ahora</h3><p>Ni operador, ni receptivo, ni agregador de hoteles: exigen licencias, contratación y capital, y los agregadores del sector crecen poco.</p></article>
+  </div>
+</section>
+
+<footer>
+  <span>Cifras de comportamiento: encuestas a mayores de 50 en EE. UU. y Reino Unido (2024–2026). Rangos de comisión y margen: guías del sector de distribución turística; orientativos, no auditados.</span>
+  <span>Mapa elaborado el 8 de noviembre de 2026.</span>
+</footer>
+</div>
+
+<script>
+(function(){
+  const ROUTES = {
+    direct:   { layers:["media","hotelagg"],                      count:"0–1", split:{mkt:0,adv:0,op:0,dmc:0,lug:0,sup:100},
+                desc:"Viajero que se lo monta solo: web del hotel o una gran web de reservas, maletas a cuestas o contratadas sueltas. Minoritario en este perfil: la logística de etapas disuade." },
+    operator: { layers:["media","operator","dmc","luggage"],      count:"2–3", split:{mkt:0,adv:0,op:30,dmc:15,lug:5,sup:50},
+                desc:"El caso típico británico: compra al operador autoguiado, que trabaja con un receptivo español y una empresa de maletas. El vuelo lo reserva aparte." },
+    advisor:  { layers:["media","advisor","operator","dmc","luggage"], count:"3–4", split:{mkt:0,adv:13,op:30,dmc:15,lug:5,sup:37},
+                desc:"El caso típico estadounidense de gama media-alta: su asesor elige el operador, el operador usa un receptivo, el receptivo contrata hotel, guía y maletas." },
+    market:   { layers:["media","market","advisor","operator","dmc","luggage"], count:"4–5", split:{mkt:10,adv:13,op:27,dmc:15,lug:5,sup:30},
+                desc:"La ruta más larga: descubre en un marketplace, compra a través de un asesor, y por debajo siguen operador, receptivo y logística." }
+  };
+  const layers = Array.from(document.querySelectorAll(".layer"));
+  const segs = Array.from(document.querySelectorAll(".seg"));
+  const buttons = Array.from(document.querySelectorAll(".route"));
+  segs.forEach(s => s.dataset.label = s.textContent.trim());
+  function go(key){
+    const r = ROUTES[key];
+    layers.forEach(l => { const on = r.layers.includes(l.dataset.layer); l.classList.toggle("on", on); l.classList.toggle("off", !on); });
+    segs.forEach(s => {
+      const v = r.split[s.dataset.k];
+      s.style.flex = v + " 1 0"; s.style.display = v ? "grid" : "none";
+      s.textContent = v >= 12 ? s.dataset.label + " " + v : String(v);
+      s.title = s.dataset.label + ": " + v + " €";
+    });
+    document.getElementById("count").textContent = r.count;
+    document.getElementById("desc").textContent = r.desc;
+    buttons.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.route === key)));
+    try{ localStorage.setItem("mapa60-route", key); }catch(e){}
+  }
+  buttons.forEach(b => b.addEventListener("click", () => go(b.dataset.route)));
+  let start = "operator";
+  try { const s = localStorage.getItem("mapa60-route"); if (s && ROUTES[s]) start = s; } catch(e){}
+  go(start);
+  // open the operator layer by default so the page reads complete at rest
+  document.querySelector('[data-layer="operator"] .lcard').open = true;
+})();
+</script>
+</body>
+</html>

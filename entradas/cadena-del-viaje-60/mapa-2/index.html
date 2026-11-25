@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapa 2, de la cadena del viaje 60+ · versión nodos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a network map. Traveller on the left, channels in the middle, operation at the centre, end suppliers on the right. Three kinds of flow: money (red), information (ochre, dashed), service (green). A route selector shows only the actors and flows that route uses. */
+:root{
+  --bg:#EEF1EC; --paper:#FFFFFF; --ink:#1E2A24; --muted:#5E6B64; --line:#D3DAD3;
+  --money:#C8372D; --info:#B8842A; --svc:#2F5D43; --node:#FFFFFF; --node-line:#9AA79F; --dim:#C9D1CB; --gr-soft:#F6DDD9; --ochre-soft:#F3E7CF;
+  --display:"Sora", "Segoe UI", system-ui, sans-serif;
+  --body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141A17; --paper:#1D2521; --ink:#EEF2EE; --muted:#A3AFA8; --line:#334039;
+  --money:#F0695C; --info:#E2B35E; --svc:#8FCBA6; --node:#232C27; --node-line:#5C6B63; --dim:#2C3630; --gr-soft:#4A2622; --ochre-soft:#3E3320; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141A17; --paper:#1D2521; --ink:#EEF2EE; --muted:#A3AFA8; --line:#334039;
+  --money:#F0695C; --info:#E2B35E; --svc:#8FCBA6; --node:#232C27; --node-line:#5C6B63; --dim:#2C3630; --gr-soft:#4A2622; --ochre-soft:#3E3320; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(26px,4vw,38px);font-weight:700}
+h3{font-size:16px;font-weight:600}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.lede{color:var(--muted);max-width:70ch;font-size:18px}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--info);outline-offset:2px}
+
+.routes{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.route{padding:9px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-weight:600;font-size:15px}
+.route[aria-pressed="true"]{border-color:var(--money);background:var(--gr-soft)}
+.variants{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-height:38px}
+.variants .lbl{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-right:4px}
+.var{padding:7px 12px;border-radius:999px;border:1.5px dashed var(--line);background:transparent;color:var(--ink);font-size:14px}
+.var[aria-pressed="true"]{border-style:solid;border-color:var(--info);background:var(--ochre-soft)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.flt{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-weight:600;font-size:14px}
+.flt[aria-pressed="false"]{opacity:.45}
+.flt i{display:inline-block;width:24px;height:0;border-top:3px solid}
+.flt.money i{border-color:var(--money)} .flt.info i{border-color:var(--info);border-top-style:dashed} .flt.svc i{border-color:var(--svc)}
+.reset{margin-left:auto;padding:7px 12px;border-radius:999px;border:1.5px solid var(--line);background:transparent;color:var(--muted);font-size:14px}
+
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;align-items:start}
+@media (max-width:900px){.stage{grid-template-columns:1fr}}
+.mapbox{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px;overflow-x:auto}
+svg{display:block;width:100%;height:auto;min-width:640px;font-family:var(--body)}
+.edge{fill:none;stroke-width:2;transition:opacity .2s,stroke-width .2s}
+.edge.money{stroke:var(--money)} .edge.info{stroke:var(--info);stroke-dasharray:6 5} .edge.svc{stroke:var(--svc);stroke-width:1.6}
+.edge.hidden{display:none}
+.edge.dim{opacity:.08}
+.edge.hot{stroke-width:3.4}
+.node{cursor:pointer}
+.node rect{fill:var(--node);stroke:var(--node-line);stroke-width:1.5;rx:9;transition:stroke .2s,fill .2s}
+.node text{fill:var(--ink);font-size:14px;font-weight:600;pointer-events:none}
+.node .sub{font-size:11.5px;font-weight:400;fill:var(--muted);font-family:var(--mono)}
+.node.off rect{stroke:var(--dim);fill:var(--bg)} .node.off text{fill:var(--dim)}
+.node.dim rect{stroke:var(--dim)} .node.dim text{fill:var(--dim)}
+.node.sel rect{stroke:var(--ink);stroke-width:2.5}
+.node.pack rect{stroke:var(--money);stroke-width:2.5}
+.node.traveller rect{fill:var(--bg)}
+.group{fill:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.lane{stroke:var(--line);stroke-dasharray:3 6}
+
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px;min-height:200px}
+.panel h2{font-family:var(--display);font-size:20px;font-weight:600}
+.panel .role{font-size:15px;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px}
+.kpi b{display:block;font-family:var(--display);font-size:22px;font-weight:700;line-height:1.1}
+.kpi span{font-size:12.5px;color:var(--muted)}
+.bar{display:flex;height:30px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.seg{display:grid;place-items:center;font-family:var(--mono);font-size:11.5px;color:#fff;min-width:0;overflow:hidden;white-space:nowrap}
+.seg.s-adv{background:#7A4E9E}.seg.s-mkt{background:#2E6E9E}.seg.s-op{background:var(--money)}.seg.s-dmc{background:var(--info)}.seg.s-lug{background:#6B7D74}.seg.s-hot{background:#8A3F5E}.seg.s-sup{background:var(--svc)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12.5px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.legend .l-adv::before{background:#7A4E9E}.legend .l-mkt::before{background:#2E6E9E}.legend .l-op::before{background:var(--money)}.legend .l-dmc::before{background:var(--info)}.legend .l-lug::before{background:#6B7D74}.legend .l-hot::before{background:#8A3F5E}.legend .l-sup::before{background:var(--svc)}
+.rel{display:flex;flex-direction:column;gap:6px}
+.rel h3{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:500;display:flex;align-items:center;gap:8px}
+.rel h3::before{content:"";width:18px;border-top:3px solid}
+.rel.money h3{color:var(--money)} .rel.money h3::before{border-color:var(--money)}
+.rel.info h3{color:var(--info)} .rel.info h3::before{border-color:var(--info);border-top-style:dashed}
+.rel.svc h3{color:var(--svc)} .rel.svc h3::before{border-color:var(--svc)}
+.rel ul{margin:0;padding-left:0;list-style:none;display:grid;gap:4px}
+.rel li{font-size:14.5px;display:grid;grid-template-columns:auto 1fr;gap:8px}
+.rel li b{font-weight:600}
+.rel li span{color:var(--muted)}
+.hint{font-size:13.5px;color:var(--muted)}
+
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:820px){.keys{grid-template-columns:1fr}}
+.key{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px;border-top:4px solid}
+.key.money{border-top-color:var(--money)} .key.info{border-top-color:var(--info)} .key.svc{border-top-color:var(--svc)}
+.key p{font-size:15px}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header style="display:flex;flex-direction:column;gap:10px">
+  <span class="eyebrow">Mapa de actores · versión nodos</span>
+  <h1>Quién se conecta con quién en el viaje de senderismo del 60+</h1>
+  <p class="lede">Cada caja es un tipo de empresa, no una marca. Elige una ruta de compra y verás solo los actores y flujos que usa: dinero, información que decide la compra y servicio que recibe el viajero. El actor con borde rojo es el que empaqueta el viaje.</p>
+</header>
+
+<div class="routes" role="group" aria-label="Ruta de compra">
+  <button class="route" data-route="all" aria-pressed="false">Todas las conexiones</button>
+  <button class="route" data-route="r1" aria-pressed="false">1 · Por su cuenta</button>
+  <button class="route" data-route="r2" aria-pressed="true">2 · Con operador</button>
+  <button class="route" data-route="r3" aria-pressed="false">3 · Vía asesor</button>
+  <button class="route" data-route="r4" aria-pressed="false">4 · Vía hotel</button>
+</div>
+<div class="variants" id="variants" role="group" aria-label="Variante"></div>
+
+<div class="controls" role="group" aria-label="Tipos de flujo">
+  <button class="flt money" data-type="money" aria-pressed="true"><i></i>Dinero</button>
+  <button class="flt info" data-type="info" aria-pressed="true"><i></i>Información e influencia</button>
+  <button class="flt svc" data-type="svc" aria-pressed="true"><i></i>Servicio al viajero</button>
+  <button class="reset" id="reset">Quitar selección de actor</button>
+</div>
+
+<div class="stage">
+  <div class="mapbox"><svg id="map" viewBox="0 0 1040 680" role="img" aria-label="Mapa de red de actores"></svg></div>
+  <aside class="panel" id="panel" aria-live="polite"></aside>
+</div>
+
+<section class="keys" aria-label="Lectura de los tres flujos">
+  <div class="key money"><h3>Dinero</h3><p>Sale del viajero por pocas puertas (paquete, vuelo, gasto en destino) y se reparte hacia abajo: comisiones a asesor, marketplace y medios; tarifas netas a receptivo y proveedores. Quien empaqueta decide el reparto.</p></div>
+  <div class="key info"><h3>Información e influencia</h3><p>Decide la compra antes de que exista. En las rutas 1, 2 y 3 la certeza la vende alguien que no está en el destino; solo en la 4 la vende quien vive allí.</p></div>
+  <div class="key svc"><h3>Servicio</h3><p>Lo que el viajero vive: cama, guía, maleta que aparece en el siguiente hotel, transfer, cena. Lo prestan actores que casi nunca le han vendido nada directamente.</p></div>
+</section>
+
+<footer>Tipos de actor y flujos derivados del análisis de la cadena de distribución del turismo activo y de los hábitos de compra de mayores de 50 en UK y EE. UU. Repartos del precio y horas: estimaciones orientativas a partir de rangos del sector.</footer>
+</div>
+
+<script>
+(function(){
+  const NODES = [
+    {id:"viajero",    x:40,  y:300, w:150, h:64, label:"Viajero 60+",            sub:"UK · US", cls:"traveller",
+     role:"Compra el paquete, el vuelo y el gasto en destino. Investiga mucho, compra con meses de antelación y paga por certeza, no por tiempo."},
+    {id:"medios",     x:270, y:40,  w:170, h:64, label:"Medios y comunidades",  sub:"prensa · rankings · foros · IA",
+     role:"Siembran la idea y dan confianza. Cobran de operadores y hoteles por publicidad o afiliación; en la ruta 1, también del viajero (guías, apps). El asistente de IA es el canal emergente de esta capa."},
+    {id:"asesor",     x:270, y:170, w:170, h:64, label:"Asesor de viajes",       sub:"lujo o generalista",
+     role:"Vende confianza personal, no conocimiento del destino. El de lujo monta el viaje con un receptivo y fija precio (20–30 %); el generalista vende el paquete del operador a comisión (10–16 %). Sobre todo en EE. UU."},
+    {id:"marketplace",x:270, y:300, w:170, h:64, label:"Marketplace de tours",  sub:"descubrir y comparar",
+     role:"Catálogo de paquetes de muchos operadores. Para el 60+ es sobre todo descubrimiento; muchos acaban reservando directo. Su comisión sale del margen del operador, no del precio."},
+    {id:"club",       x:270, y:430, w:170, h:64, label:"Club de hoteles",       sub:"cuota al hotel · reserva directa",
+     role:"Selección de hoteles con encanto que cobra una cuota anual al hotel y manda al viajero a reservar directo. Es la capa 0 de la ruta 4."},
+    {id:"ota",        x:270, y:560, w:170, h:64, label:"Web de reservas",       sub:"comisión por noche",
+     role:"Gran web de reservas de alojamiento. Cobra al hotel ~15 % por noche. Es como el viajero por su cuenta reserva cuando no usa un club."},
+    {id:"aerolinea",  x:510, y:40,  w:170, h:64, label:"Aerolínea",             sub:"vuelo aparte",
+     role:"Casi nunca dentro del paquete. El viajero la paga directamente o a través de su asesor."},
+    {id:"operador",   x:510, y:230, w:170, h:64, label:"Operador emisor",       sub:"especialista en senderismo",
+     role:"Diseña el paquete, fija el precio y tiene la relación con el cliente. Compra neto al receptivo y a los proveedores; margen del 20–40 %, hasta 45 % si integra al receptivo. También es su propio medio: catálogo, newsletter, teléfono."},
+    {id:"receptivo",  x:700, y:230, w:170, h:64, label:"Receptivo en destino",  sub:"DMC · ground handler",
+     role:"Opera sobre el terreno para el operador o el asesor extranjero: contrata hotel, guía, maletas y transfers, resuelve incidencias. Margen del 10–25 % sobre tarifas netas. En la ruta 3a diseña a medida, sin amortizar."},
+    {id:"seguro",     x:510, y:540, w:170, h:64, label:"Seguro de viaje",       sub:"a veces vía operador",
+     role:"Lo compra el viajero por su cuenta o lo incluye el operador. Comisiones altas para quien lo intermedia."},
+    {id:"hotel",      x:900, y:40,  w:130, h:64, label:"Hotel con encanto",     sub:"fin de etapa o base",
+     role:"El activo que el viajero quiere. En las rutas 2 y 3 cede precio (10–25 %) y cliente al operador. En la ruta 4 empaqueta él: contrata guía, concierta cenas, llama al taxi, y se queda precio y cliente."},
+    {id:"guia",       x:900, y:170, w:130, h:64, label:"Guía local",            sub:"guiado · ruta 4",
+     role:"Autónomo o en plantilla del receptivo. En autoguiado lo sustituye la app con GPS y el teléfono 24/7. En la ruta 4 lo contrata el hotel por jornadas."},
+    {id:"maletas",    x:900, y:300, w:130, h:64, label:"Transporte de maletas", sub:"5–10 € bolsa/día",
+     role:"Recoge la maleta por la mañana y la deja en el siguiente hotel. Suelto solo existe en los Caminos; en Tramuntana o Alpujarra, solo vía operador. Lo que hace viable la caminata itinerante para un 60+."},
+    {id:"transporte", x:900, y:430, w:130, h:64, label:"Taxi · transfer · tren", sub:"tramos y llegadas",
+     role:"Traslados de llegada y de etapas que no se caminan. Los reserva el receptivo, el hotel (ruta 4) o el viajero."},
+    {id:"gastro",     x:900, y:560, w:130, h:64, label:"Restaurante · bodega",  sub:"cenas y experiencias",
+     role:"La capa menos organizada. Cenas incluidas vía receptivo, concertadas por el hotel (ruta 4) o pagadas por el viajero por recomendación. Experiencias sueltas con 20–25 % de comisión en webs de actividades."}
+  ];
+
+  // tags: which variants use the edge. all = every variant.
+  const ALL = ["r1i","r1b","r2a","r2b","r3a","r3b","r4"];
+  const EDGES = [
+    // dinero
+    {f:"viajero",t:"operador",k:"money",l:"precio del paquete",tags:["r2a","r2b","r3b"]},
+    {f:"viajero",t:"asesor",k:"money",l:"precio del viaje a medida (3a) · honorario (3b)",tags:["r3a","r3b"]},
+    {f:"viajero",t:"aerolinea",k:"money",l:"vuelo",tags:ALL},
+    {f:"viajero",t:"ota",k:"money",l:"noche de hotel",tags:["r1i","r1b"]},
+    {f:"viajero",t:"hotel",k:"money",l:"reserva directa vía club (1) · paquete del hotel (4)",tags:["r1b","r4"]},
+    {f:"viajero",t:"gastro",k:"money",l:"cenas no incluidas, vino, extras",tags:["r1i","r1b","r2a","r3b"]},
+    {f:"viajero",t:"seguro",k:"money",l:"póliza",tags:["r1i","r1b","r3a","r4"]},
+    {f:"viajero",t:"medios",k:"money",l:"guía de la ruta, app de senderos",tags:["r1i","r1b"]},
+    {f:"viajero",t:"maletas",k:"money",l:"por bolsa y etapa (solo Caminos)",tags:["r1i"]},
+    {f:"viajero",t:"transporte",k:"money",l:"taxi, tren",tags:["r1i","r1b"]},
+    {f:"asesor",t:"receptivo",k:"money",l:"tarifa neta del viaje a medida",tags:["r3a"]},
+    {f:"operador",t:"asesor",k:"money",l:"comisión 10–16 %",tags:["r3b"]},
+    {f:"operador",t:"marketplace",k:"money",l:"comisión por venta (sale del margen del operador)",tags:["r2a","r2b"]},
+    {f:"operador",t:"medios",k:"money",l:"afiliación · publicidad",tags:["r2a","r2b","r3b"]},
+    {f:"operador",t:"receptivo",k:"money",l:"tarifa neta del terreno",tags:["r2a","r2b","r3b"]},
+    {f:"operador",t:"hotel",k:"money",l:"tarifa neta directa (operador integrado)",tags:["r2a","r2b"]},
+    {f:"operador",t:"seguro",k:"money",l:"póliza incluida",tags:["r2a","r2b","r3b"]},
+    {f:"receptivo",t:"hotel",k:"money",l:"tarifa neta por noche",tags:["r2a","r2b","r3a","r3b"]},
+    {f:"receptivo",t:"guia",k:"money",l:"jornada de guía",tags:["r2b","r3a"]},
+    {f:"receptivo",t:"maletas",k:"money",l:"por bolsa y etapa",tags:["r2a","r2b","r3a","r3b"]},
+    {f:"receptivo",t:"transporte",k:"money",l:"transfers",tags:["r2a","r2b","r3a","r3b"]},
+    {f:"receptivo",t:"gastro",k:"money",l:"cenas incluidas",tags:["r2b","r3a"]},
+    {f:"hotel",t:"club",k:"money",l:"cuota anual",tags:["r1b","r4"]},
+    {f:"hotel",t:"ota",k:"money",l:"comisión ~15 % por noche",tags:["r1i","r1b"]},
+    {f:"hotel",t:"medios",k:"money",l:"publicidad · cuota de guía",tags:["r4"]},
+    {f:"hotel",t:"guia",k:"money",l:"jornada de guía",tags:["r4"]},
+    {f:"hotel",t:"gastro",k:"money",l:"cena concertada",tags:["r4"]},
+    {f:"hotel",t:"transporte",k:"money",l:"taxi al inicio de la ruta",tags:["r4"]},
+    // información
+    {f:"medios",t:"viajero",k:"info",l:"inspiración y confianza",tags:ALL},
+    {f:"asesor",t:"viajero",k:"info",l:"recomendación personal",tags:["r3a","r3b"]},
+    {f:"marketplace",t:"viajero",k:"info",l:"comparación de paquetes",tags:["r2a","r2b"]},
+    {f:"club",t:"viajero",k:"info",l:"descubrimiento de hoteles",tags:["r1b","r4"]},
+    {f:"ota",t:"viajero",k:"info",l:"reseñas, disponibilidad",tags:["r1i","r1b"]},
+    {f:"medios",t:"asesor",k:"info",l:"tendencias, destinos",tags:["r3a","r3b"]},
+    {f:"receptivo",t:"operador",k:"info",l:"qué hoteles y etapas funcionan",tags:["r2a","r2b","r3b"]},
+    {f:"receptivo",t:"asesor",k:"info",l:"propuesta a medida",tags:["r3a"]},
+    {f:"operador",t:"viajero",k:"info",l:"app, notas de ruta, soporte 24/7",tags:["r2a","r2b","r3b"]},
+    {f:"hotel",t:"viajero",k:"info",l:"rutas, consejos, reservas (mini-receptivo)",tags:["r1b","r4"]},
+    {f:"hotel",t:"gastro",k:"info",l:"recomienda dónde cenar",tags:["r1i","r1b"]},
+    // servicio
+    {f:"hotel",t:"viajero",k:"svc",l:"alojamiento y desayuno",tags:ALL},
+    {f:"guia",t:"viajero",k:"svc",l:"acompañamiento",tags:["r2b","r3a","r4"]},
+    {f:"maletas",t:"viajero",k:"svc",l:"maleta en el siguiente hotel",tags:["r1i","r2a","r2b","r3a","r3b"]},
+    {f:"transporte",t:"viajero",k:"svc",l:"traslados",tags:["r1i","r1b","r2a","r2b","r3a","r3b","r4"]},
+    {f:"gastro",t:"viajero",k:"svc",l:"cena, cata, experiencia",tags:ALL},
+    {f:"aerolinea",t:"viajero",k:"svc",l:"vuelo",tags:ALL}
+  ];
+
+  const ROUTES = {
+    all:{ name:"Todas las conexiones", variants:[], pack:null, inter:"—", t1:"—", desc:"Todos los actores y flujos posibles superpuestos. Elige una ruta para ver una compra concreta.", split:null },
+    r1:{ name:"Por su cuenta", variants:[["r1i","Itinerante"],["r1b","Base fija"]] },
+    r2:{ name:"Con operador, directo", variants:[["r2a","Autoguiado"],["r2b","Guiado en grupo"]] },
+    r3:{ name:"Vía asesor", variants:[["r3a","Lujo + receptivo a medida"],["r3b","Generalista + paquete"]] },
+    r4:{ name:"Vía hotel", variants:[["r4","El hotel empaqueta"]] }
+  };
+  const VARIANTS = {
+    r1i:{ name:"Por su cuenta · itinerante", pack:null, inter:"4–8", t1:"20–40 h", split:{mkt:15,sup:85},
+      desc:"Cambia de hotel cada día. Reserva cada pieza por separado: web de reservas, maletas sueltas (solo en los Caminos), tren, taxis, seguro, guía de papel o app. Nadie empaqueta; el coste es tiempo y riesgo. Mayoritaria en el Camino, casi imposible en Tramuntana o Alpujarra sin coche." },
+    r1b:{ name:"Por su cuenta · base fija", pack:null, inter:"2–4", t1:"8–15 h", split:{mkt:12,sup:88},
+      desc:"Un solo hotel con encanto cinco o siete noches, encontrado por un club o por prensa, y caminatas en estrella. Desaparecen las maletas. El hotel hace de mini-receptivo informal (rutas, taxi, dónde cenar) sin cobrar por ello. Probablemente la forma más común en que el 60+ va por su cuenta." },
+    r2a:{ name:"Con operador · autoguiado", pack:"operador", inter:"1–3", t1:"2–5 h", split:{op:30,dmc:15,lug:5,sup:50},
+      desc:"El caso típico británico. El operador vende logística sin guía: hoteles, maletas, app y teléfono 24/7. Tiempo amortizado en estado puro: diseña una vez y cada cliente le cuesta 2–4 h. Si integra al receptivo, su margen sube del 30 al 45 %. El marketplace es solo descubrimiento." },
+    r2b:{ name:"Con operador · guiado en grupo", pack:"operador", inter:"2–3", t1:"2–4 h", split:{op:28,dmc:15,lug:5,sup:52},
+      desc:"Fechas fijas, mínimo de plazas, guía cada día y media pensión. Vende más certeza (compañía, alguien delante) y más caro; asume el riesgo de salidas que no se llenan. El guía y las cenas los contrata el receptivo." },
+    r3a:{ name:"Vía asesor · lujo + receptivo a medida", pack:"receptivo", inter:"2–3", t1:"1–2 h", split:{adv:25,dmc:20,sup:55},
+      desc:"El caso estadounidense de gama alta. El asesor no compra un catálogo: pide al receptivo un viaje a medida, cotizado neto, y fija el precio con margen del 20–30 %. El operador emisor desaparece. La certeza se paga dos veces: el cliente al asesor, el asesor al receptivo. Doble diferencial de idioma." },
+    r3b:{ name:"Vía asesor · generalista + paquete", pack:"operador", inter:"3–4", t1:"1–2 h", split:{adv:13,op:27,dmc:10,lug:5,sup:45},
+      desc:"El asesor de barrio o home-based vende el paquete del operador tal cual y cobra 10–16 % de comisión. Es la ruta 2 con una capa más; el cliente paga lo mismo porque hay paridad de precios." },
+    r4:{ name:"Vía hotel · el hotel empaqueta", pack:"hotel", inter:"1–2", t1:"1–2 h", split:{mkt:5,hot:70,sup:25},
+      desc:"El viajero encuentra el hotel (club, prensa, reseñas) y el hotel vende el viaje: noches, rutas en estrella con un guía local que contrata por jornadas, cenas concertadas, taxi al inicio de la ruta. Operador y receptivo a la vez, en su territorio. Es la única ruta en que el hotel se queda precio y cliente, y la única en que la certeza la vende quien vive allí." }
+  };
+  const SEGS = [["mkt","Marketplace · web · club"],["adv","Asesor"],["op","Operador"],["dmc","Receptivo"],["lug","Maletas"],["hot","Hotel (empaqueta)"],["sup","Proveedores finales"]];
+
+  const byId = Object.fromEntries(NODES.map(n => [n.id, n]));
+  const svg = document.getElementById("map"), NS = "http://www.w3.org/2000/svg";
+  const el = (t,a) => { const e = document.createElementNS(NS,t); for (const k in a) e.setAttribute(k,a[k]); return e; };
+  const defs = el("defs",{});
+  ["money","info","svc"].forEach(k => {
+    const m = el("marker",{id:"arr-"+k,viewBox:"0 0 10 10",refX:"9",refY:"5",markerWidth:"7",markerHeight:"7",orient:"auto-start-reverse"});
+    const p = el("path",{d:"M0,0 L10,5 L0,10 z"}); p.style.fill = k==="money"?"var(--money)":k==="info"?"var(--info)":"var(--svc)";
+    m.appendChild(p); defs.appendChild(m);
+  });
+  svg.appendChild(defs);
+  [["Viajero",115],["Canales de descubrimiento y venta",355],["Operación y servicios directos",690],["Proveedores finales",965]].forEach(([t,x]) => { const g = el("text",{x,y:22,"text-anchor":"middle"}); g.setAttribute("class","group"); g.textContent = t; svg.appendChild(g); });
+  [[230,32,230,660],[480,32,480,660],[880,32,880,660]].forEach(([x1,y1,x2,y2]) => svg.appendChild(el("line",{x1,y1,x2,y2,class:"lane"})));
+
+  const center = n => ({x:n.x+n.w/2,y:n.y+n.h/2});
+  function anchor(n,toward){ const c = center(n), dx = toward.x-c.x, dy = toward.y-c.y, hw = n.w/2+4, hh = n.h/2+4;
+    const s = Math.min(dx===0?Infinity:hw/Math.abs(dx), dy===0?Infinity:hh/Math.abs(dy)); return {x:c.x+dx*s,y:c.y+dy*s}; }
+  const edgeEls = [];
+  EDGES.forEach(e => {
+    const a = byId[e.f], b = byId[e.t], ca = center(a), cb = center(b), p1 = anchor(a,cb), p2 = anchor(b,ca);
+    const mx = (p1.x+p2.x)/2, my = (p1.y+p2.y)/2, dx = p2.x-p1.x, dy = p2.y-p1.y, len = Math.hypot(dx,dy)||1;
+    const bow = Math.min(60,len*0.18) * (e.k==="svc"?-1:e.k==="info"?0.6:1) * (e.f<e.t?1:-1);
+    const path = el("path",{d:`M${p1.x},${p1.y} Q${mx-dy/len*bow},${my+dx/len*bow} ${p2.x},${p2.y}`,"marker-end":`url(#arr-${e.k})`});
+    path.setAttribute("class","edge "+e.k);
+    const title = el("title",{}); title.textContent = `${a.label} → ${b.label}: ${e.l}`; path.appendChild(title);
+    svg.appendChild(path); edgeEls.push(path);
+  });
+  const nodeEls = {};
+  NODES.forEach(n => {
+    const g = el("g",{tabindex:"0",role:"button","aria-label":n.label}); g.setAttribute("class","node "+(n.cls||""));
+    g.appendChild(el("rect",{x:n.x,y:n.y,width:n.w,height:n.h}));
+    const t = el("text",{x:n.x+n.w/2,y:n.y+28,"text-anchor":"middle"}); t.textContent = n.label; g.appendChild(t);
+    const s = el("text",{x:n.x+n.w/2,y:n.y+47,"text-anchor":"middle"}); s.setAttribute("class","sub"); s.textContent = n.sub; g.appendChild(s);
+    g.addEventListener("click",() => select(n.id));
+    g.addEventListener("keydown",ev => { if (ev.key==="Enter"||ev.key===" "){ ev.preventDefault(); select(n.id); } });
+    svg.appendChild(g); nodeEls[n.id] = g;
+  });
+
+  const filters = {money:true,info:true,svc:true};
+  let route = "r2", variant = "r2a", selected = null;
+  const panel = document.getElementById("panel"), variantsBox = document.getElementById("variants");
+
+  const active = e => variant==="all" ? true : e.tags.includes(variant);
+  function render(){
+    const V = VARIANTS[variant];
+    EDGES.forEach((e,i) => { const p = edgeEls[i]; const on = filters[e.k] && active(e);
+      p.classList.toggle("hidden",!on);
+      const touches = selected && (e.f===selected||e.t===selected);
+      p.classList.toggle("dim",!!selected && !touches); p.classList.toggle("hot",!!touches); });
+    NODES.forEach(n => { const g = nodeEls[n.id];
+      const inRoute = variant==="all" || n.id==="viajero" || EDGES.some(e => active(e) && (e.f===n.id||e.t===n.id));
+      g.classList.toggle("off",!inRoute);
+      const linked = !selected || n.id===selected || EDGES.some(e => filters[e.k] && active(e) && ((e.f===selected&&e.t===n.id)||(e.t===selected&&e.f===n.id)));
+      g.classList.toggle("dim",inRoute && !linked);
+      g.classList.toggle("sel",n.id===selected);
+      g.classList.toggle("pack",!!(V && V.pack===n.id)); });
+    renderVariants(); renderPanel();
+  }
+  function renderVariants(){
+    const R = ROUTES[route];
+    if (!R.variants.length){ variantsBox.innerHTML = ""; return; }
+    variantsBox.innerHTML = `<span class="lbl">Variante</span>` + R.variants.map(([k,l]) => `<button class="var" data-v="${k}" aria-pressed="${k===variant}">${l}</button>`).join("");
+    variantsBox.querySelectorAll(".var").forEach(b => b.addEventListener("click",() => { variant = b.dataset.v; selected = null; render(); }));
+  }
+  function bar(split){
+    if (!split) return "";
+    const total = Object.values(split).reduce((a,b)=>a+b,0);
+    return `<div class="bar">${SEGS.filter(([k]) => split[k]).map(([k,l]) => `<div class="seg s-${k}" style="flex:${split[k]} 1 0" title="${l}: ${split[k]}">${split[k]>=12?l+" "+split[k]:split[k]}</div>`).join("")}</div>
+      <div class="legend">${SEGS.filter(([k]) => split[k]).map(([k,l]) => `<span class="l-${k}">${l}</span>`).join("")}</div>
+      <p class="hint">De cada 100 € que paga el viajero (orientativo, sin el vuelo). Total ${total}.</p>`;
+  }
+  function renderPanel(){
+    if (selected){
+      const n = byId[selected];
+      const groups = [
+        {k:"money",t:"Recibe dinero de",list:EDGES.filter(e => active(e)&&e.k==="money"&&e.t===selected).map(e => [byId[e.f].label,e.l])},
+        {k:"money",t:"Paga a",list:EDGES.filter(e => active(e)&&e.k==="money"&&e.f===selected).map(e => [byId[e.t].label,e.l])},
+        {k:"info",t:"Informa / influye a",list:EDGES.filter(e => active(e)&&e.k==="info"&&e.f===selected).map(e => [byId[e.t].label,e.l])},
+        {k:"info",t:"Se informa por",list:EDGES.filter(e => active(e)&&e.k==="info"&&e.t===selected).map(e => [byId[e.f].label,e.l])},
+        {k:"svc",t:"Presta servicio a",list:EDGES.filter(e => active(e)&&e.k==="svc"&&e.f===selected).map(e => [byId[e.t].label,e.l])},
+        {k:"svc",t:"Recibe servicio de",list:EDGES.filter(e => active(e)&&e.k==="svc"&&e.t===selected).map(e => [byId[e.f].label,e.l])}
+      ].filter(g => g.list.length && filters[g.k]);
+      panel.innerHTML = `<span class="eyebrow">Actor · en la ruta ${variant==="all"?"(todas)":VARIANTS[variant].name}</span><h2>${n.label}</h2><p class="role">${n.role}</p>` +
+        (groups.length ? groups.map(g => `<div class="rel ${g.k}"><h3>${g.t}</h3><ul>${g.list.map(([w,x]) => `<li><b>${w}</b><span>${x}</span></li>`).join("")}</ul></div>`).join("") : `<p class="hint">Este actor no interviene en la variante elegida.</p>`) +
+        `<p class="hint">Pulsa "Quitar selección de actor" para volver a la ruta.</p>`;
+      return;
+    }
+    if (variant==="all"){ panel.innerHTML = `<span class="eyebrow">Ruta</span><h2>Todas las conexiones</h2><p class="role">${ROUTES.all.desc}</p><p class="hint">Toca un actor para ver sus relaciones.</p>`; return; }
+    const V = VARIANTS[variant];
+    panel.innerHTML = `<span class="eyebrow">Ruta</span><h2>${V.name}</h2>
+      <div class="kpis"><div class="kpi"><b>${V.inter}</b><span>empresas entre el viajero y el hotel</span></div><div class="kpi"><b>${V.t1}</b><span>tiempo del viajero para montarlo</span></div></div>
+      <p class="role">${V.desc}</p>
+      <p class="hint"><b style="color:var(--ink)">Quién empaqueta:</b> ${V.pack ? byId[V.pack].label : "nadie, el propio viajero"}</p>` + bar(V.split) +
+      `<p class="hint">Toca un actor para ver sus relaciones dentro de esta ruta.</p>`;
+  }
+  function select(id){ selected = selected===id ? null : id; render(); }
+  document.querySelectorAll(".route").forEach(b => b.addEventListener("click",() => {
+    route = b.dataset.route; document.querySelectorAll(".route").forEach(x => x.setAttribute("aria-pressed",String(x===b)));
+    variant = route==="all" ? "all" : ROUTES[route].variants[0][0]; selected = null; render();
+    try{ localStorage.setItem("mapa60-nodos-route",route); }catch(e){}
+  }));
+  document.querySelectorAll(".flt").forEach(b => b.addEventListener("click",() => { filters[b.dataset.type] = !filters[b.dataset.type]; b.setAttribute("aria-pressed",String(filters[b.dataset.type])); render(); }));
+  document.getElementById("reset").addEventListener("click",() => { selected = null; render(); });
+  render();
+})();
+</script>
+</body>
+</html>
