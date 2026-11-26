@@ -1,0 +1,169 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Ranking por componentes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: four ranking columns side by side, one row per model, a model keeps its row once it has been top N */
+:root{
+  --bg:#EEF1F4; --surface:#FFFFFF; --ink:#16202A; --muted:#5D6977; --line:#D6DDE4;
+  --accent:#2F55C8; --accent-soft:#E3EAFB; --up:#1E7A4C; --down:#C0362B; --out-bg:#FBEDEB; --new-bg:#E5F4EC; --always-bg:#DCE1E7; --three-bg:#DCEBFA;
+  --display:'Archivo', 'Helvetica Neue', Arial, sans-serif; --body:'Source Sans 3', 'Segoe UI', Arial, sans-serif; --mono:'JetBrains Mono', ui-monospace, Menlo, monospace;
+  --i1:#B5477A; --i2:#C9822F; --i3:#3C6E9E; --i4:#7E8C2E; --i5:#2E8C83; --i6:#7A5BB5; --i7:#A65C3B; --i8:#4E8F45;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12171D; --surface:#1A2129; --ink:#E6EBF0; --muted:#97A3B0; --line:#2C3540;
+  --accent:#86A4FF; --accent-soft:#22305A; --up:#5CC48E; --down:#FF7A6E; --out-bg:#3A2224; --new-bg:#1C3A2B; --always-bg:#2E3742; --three-bg:#1D3350; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171D; --surface:#1A2129; --ink:#E6EBF0; --muted:#97A3B0; --line:#2C3540;
+  --accent:#86A4FF; --accent-soft:#22305A; --up:#5CC48E; --down:#FF7A6E; --out-bg:#3A2224; --new-bg:#1C3A2B; --always-bg:#2E3742; --three-bg:#1D3350; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+.wrap{max-width:1640px;margin:0 auto;padding-block:32px 48px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));display:flex;flex-direction:column;gap:22px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(26px,3.4vw,38px);line-height:1.08;margin:0;text-wrap:balance;letter-spacing:-.01em}
+.lede{color:var(--muted);max-width:70ch;margin:0}
+.bar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--surface)}
+.seg button{font:600 14px var(--body);color:var(--muted);background:none;border:0;padding:7px 16px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.seg button:focus-visible,.row:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:3px;display:inline-block}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat b{font-family:var(--display);font-size:22px}
+.stat small{color:var(--muted);font-size:13px}
+.scroller{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.board{display:grid;grid-template-columns:repeat(6,minmax(220px,1fr));gap:12px;min-width:1400px}
+.col{display:flex;flex-direction:column;gap:6px;min-width:0}
+.colhead{display:flex;flex-direction:column;gap:2px;padding:0 4px 8px;border-bottom:2px solid var(--ink)}
+.colhead .k{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.colhead .t{font-family:var(--display);font-weight:700;font-size:18px}
+.colhead .w{font-size:12.5px;color:var(--muted)}
+.row{display:grid;grid-template-columns:38px 1fr auto;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 9px;cursor:pointer;min-height:44px;transition:background .15s,border-color .15s,opacity .15s}
+.row .rk{font-family:var(--mono);font-weight:700;font-size:15px;text-align:right;font-variant-numeric:tabular-nums}
+.row .nm{min-width:0;display:flex;flex-direction:column}
+.row .nm span:first-child{font-weight:600;font-size:14px;line-height:1.2}
+.row .nm small{font-family:var(--mono);font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.mv{font-family:var(--mono);font-size:12px;font-weight:700;white-space:nowrap;padding:2px 6px;border-radius:5px}
+.mv.up{color:var(--up)} .mv.down{color:var(--down)} .mv.eq{color:var(--muted)}
+.mv.new{background:var(--new-bg);color:var(--up)}
+.row.always{background:var(--always-bg);border-color:transparent}
+.row.three{background:var(--three-bg);border-color:transparent}
+.row.out{background:var(--out-bg);border-color:transparent;border-left:3px solid var(--down)}
+.row.out .rk{color:var(--down)}
+.row.out .nm span:first-child{color:var(--muted)}
+.divider{font-family:var(--mono);font-size:11.5px;color:var(--down);text-transform:uppercase;letter-spacing:.06em;padding:8px 4px 2px}
+.board.focus .row{opacity:.35}
+.board.focus .row.hl{opacity:1;border-color:var(--accent);background:var(--accent-soft)}
+.board.focus .row.hl.out{background:var(--out-bg);border-color:var(--down)}
+.note{color:var(--muted);font-size:13px;max-width:80ch}
+.mix{border-collapse:collapse;width:100%;min-width:620px;background:var(--surface);border:1px solid var(--line);border-radius:10px;font-variant-numeric:tabular-nums}
+.mix th,.mix td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:center;font-size:14px}
+.mix th{font:600 12px var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.mix td:first-child,.mix th:first-child{text-align:left}
+.mix td.z{color:var(--line)}
+.mix td b{font-family:var(--mono);display:inline-block;min-width:28px;padding:2px 6px;border-radius:5px}
+.mix tr:last-child td{border-bottom:0}
+@media (prefers-reduced-motion:reduce){.row{transition:none}}
+</style>
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:10px">
+    <h1>Cómo cambia el top al añadir cada componente</h1>
+    <p class="lede">Cada columna añade un componente al sistema de puntuación. Un modelo que entra en el top se queda en la lista de las columnas siguientes aunque salga, con su puesto real en rojo. La quinta columna repite el ranking de 4 componentes con las notas revisadas por el agente 1; la sexta añade la economía y escalabilidad. Toca un modelo para seguirlo en todas las columnas.</p>
+  </header>
+  <div class="bar">
+    <div class="seg" role="group" aria-label="Tamaño del top">
+      <button id="t15" type="button" aria-pressed="false">Top 15</button>
+      <button id="t20" type="button" aria-pressed="true">Top 20</button>
+    </div>
+    <div class="legend">
+      <span><span class="mv new">NUEVO</span> entra por primera vez</span>
+      <span><span class="mv up">▲3</span><span class="mv down">▼3</span> puestos frente a la columna anterior</span>
+      <span><span class="sw" style="background:var(--out-bg);border-left:3px solid var(--down)"></span> estuvo en el top y ya no</span>
+      <span><span class="sw" style="background:var(--always-bg)"></span> en el top en todas las columnas</span>
+      <span><span class="sw" style="background:var(--three-bg)"></span> en el top en todas menos una</span>
+    </div>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="scroller"><table class="mix" id="mix"></table></div>
+  <div class="scroller"><div class="board" id="board"></div></div>
+  <div class="legend" id="inds"></div>
+  <p class="note">Fuente: puntuacion_300_modelos.xlsx, versiones 4, 4.1 y 5 (25/10/2026). Puestos sobre 295 modelos evaluados. En la columna revisada solo el top 20 tiene notas contrastadas con datos; los otros 275 conservan las estimaciones iniciales, que tienden a ir un punto altas en frecuencia y volumen.</p>
+</div>
+<script>
+const DATA = [{"n": "1.8", "name": "El audio erótico", "r": [1, 33, 70, 175, 175, 171], "s": [0.962, 0.55, 0.51, 0.427, 0.427, 0.477]}, {"n": "2.30", "name": "El accesorio de temporada", "r": [2, 37, 76, 180, 180, 227], "s": [0.939, 0.546, 0.508, 0.421, 0.421, 0.427]}, {"n": "6.46", "name": "El kit de supervivencia", "r": [3, 7, 39, 150, 150, 190], "s": [0.938, 0.617, 0.55, 0.465, 0.465, 0.453]}, {"n": "6.48", "name": "La plataforma de alertas de riesgos", "r": [4, 1, 1, 2, 6, 4], "s": [0.935, 0.787, 0.712, 0.671, 0.631, 0.642]}, {"n": "2.43", "name": "El avatar perfecto", "r": [5, 83, 258, 295, 295, 295], "s": [0.935, 0.487, 0.216, 0.113, 0.113, 0.143]}, {"n": "2.47", "name": "La comparación de clínicas", "r": [6, 2, 2, 23, 15, 12], "s": [0.933, 0.782, 0.689, 0.612, 0.612, 0.616]}, {"n": "1.7", "name": "La fantasía interactiva", "r": [7, 68, 134, 193, 193, 175], "s": [0.933, 0.507, 0.464, 0.404, 0.404, 0.471]}, {"n": "2.34", "name": "El antes y después", "r": [8, 3, 3, 14, 3, 1], "s": [0.929, 0.77, 0.682, 0.638, 0.656, 0.671]}, {"n": "1.29", "name": "La optimización de perfiles de citas", "r": [9, 11, 42, 129, 129, 93], "s": [0.92, 0.599, 0.54, 0.487, 0.487, 0.542]}, {"n": "8.6", "name": "El avatar emocional", "r": [10, 113, 151, 228, 228, 210], "s": [0.914, 0.46, 0.456, 0.368, 0.368, 0.437]}, {"n": "8.4", "name": "La pareja virtual personalizada", "r": [11, 114, 93, 196, 196, 180], "s": [0.914, 0.46, 0.496, 0.403, 0.403, 0.467]}, {"n": "8.3", "name": "El compañero emocional 24/7", "r": [12, 115, 94, 197, 197, 181], "s": [0.914, 0.46, 0.496, 0.403, 0.403, 0.467]}, {"n": "8.2", "name": "El amigo virtual con IA", "r": [13, 116, 116, 213, 213, 194], "s": [0.914, 0.46, 0.476, 0.386, 0.386, 0.452]}, {"n": "8.1", "name": "La novia virtual con IA", "r": [14, 117, 95, 198, 198, 182], "s": [0.914, 0.46, 0.496, 0.403, 0.403, 0.467]}, {"n": "4.32", "name": "La tienda Amazon FBA", "r": [15, 86, 101, 158, 158, 133], "s": [0.914, 0.485, 0.491, 0.451, 0.451, 0.512]}, {"n": "1.20", "name": "El compañero de voz con IA", "r": [16, 118, 96, 199, 199, 183], "s": [0.914, 0.46, 0.496, 0.403, 0.403, 0.467]}, {"n": "1.14", "name": "La simulación de pareja", "r": [17, 119, 97, 178, 178, 165], "s": [0.914, 0.46, 0.496, 0.423, 0.423, 0.482]}, {"n": "1.11", "name": "La novia virtual con IA", "r": [18, 120, 98, 200, 200, 184], "s": [0.914, 0.46, 0.496, 0.403, 0.403, 0.467]}, {"n": "1.9", "name": "El videojuego erótico", "r": [19, 121, 179, 211, 211, 220], "s": [0.914, 0.46, 0.436, 0.391, 0.391, 0.432]}, {"n": "2.29", "name": "La moda personalizada con IA", "r": [20, 30, 253, 265, 265, 280], "s": [0.912, 0.554, 0.236, 0.211, 0.211, 0.209]}, {"n": "8.5", "name": "La amistad por suscripción", "r": [24, 20, 5, 9, 17, 71], "s": [0.906, 0.566, 0.639, 0.652, 0.61, 0.561]}, {"n": "8.34", "name": "El retiro de conexión humana", "r": [54, 10, 53, 68, 65, 90], "s": [0.882, 0.608, 0.525, 0.562, 0.562, 0.544]}, {"n": "3.22", "name": "La protección contra el robo de identidad", "r": [58, 14, 15, 89, 87, 68], "s": [0.882, 0.583, 0.59, 0.537, 0.537, 0.562]}, {"n": "8.40", "name": "El grupo de aventuras", "r": [61, 12, 33, 43, 39, 54], "s": [0.879, 0.599, 0.559, 0.585, 0.585, 0.575]}, {"n": "6.49", "name": "La preparación para catástrofes", "r": [62, 17, 19, 37, 32, 55], "s": [0.879, 0.574, 0.584, 0.595, 0.595, 0.575]}, {"n": "8.47", "name": "El servicio de acompañamiento presencial", "r": [66, 21, 22, 19, 96, 155], "s": [0.875, 0.565, 0.579, 0.622, 0.527, 0.49]}, {"n": "8.19", "name": "La comunidad de viajeros solitarios", "r": [67, 5, 21, 69, 66, 97], "s": [0.875, 0.64, 0.584, 0.562, 0.562, 0.54]}, {"n": "2.46", "name": "El marketplace de tratamientos", "r": [73, 4, 6, 32, 27, 14], "s": [0.872, 0.657, 0.634, 0.6, 0.6, 0.614]}, {"n": "8.46", "name": "El grupo de apoyo por suscripción", "r": [84, 19, 31, 30, 24, 9], "s": [0.867, 0.57, 0.562, 0.603, 0.603, 0.621]}, {"n": "8.31", "name": "El restaurante social", "r": [86, 13, 45, 47, 43, 112], "s": [0.867, 0.595, 0.537, 0.583, 0.583, 0.534]}, {"n": "8.32", "name": "La cena con desconocidos", "r": [104, 9, 17, 59, 56, 33], "s": [0.862, 0.609, 0.585, 0.57, 0.57, 0.589]}, {"n": "5.45", "name": "El retiro de sanación", "r": [118, 15, 50, 52, 49, 96], "s": [0.861, 0.581, 0.529, 0.579, 0.579, 0.541]}, {"n": "2.20", "name": "La membresía de rejuvenecimiento", "r": [126, 18, 9, 21, 12, 11], "s": [0.857, 0.572, 0.603, 0.616, 0.616, 0.617]}, {"n": "8.49", "name": "El organizador de círculos sociales", "r": [129, 6, 12, 17, 10, 23], "s": [0.857, 0.622, 0.593, 0.631, 0.621, 0.599]}, {"n": "8.38", "name": "El club de actividades semanales", "r": [130, 36, 51, 40, 35, 18], "s": [0.857, 0.547, 0.528, 0.589, 0.589, 0.609]}, {"n": "8.48", "name": "La plataforma de amistades locales", "r": [134, 8, 29, 82, 80, 27], "s": [0.853, 0.611, 0.567, 0.551, 0.551, 0.595]}, {"n": "5.25", "name": "La fisioterapia recurrente", "r": [140, 23, 7, 5, 5, 44], "s": [0.853, 0.561, 0.617, 0.661, 0.633, 0.58]}, {"n": "3.46", "name": "La longevidad premium", "r": [164, 24, 8, 10, 26, 49], "s": [0.842, 0.56, 0.616, 0.648, 0.603, 0.577]}, {"n": "7.41", "name": "El club privado de IA", "r": [165, 97, 79, 74, 71, 19], "s": [0.839, 0.477, 0.506, 0.558, 0.558, 0.608]}, {"n": "6.24", "name": "La vivienda saludable", "r": [172, 16, 18, 13, 4, 15], "s": [0.838, 0.575, 0.585, 0.645, 0.635, 0.612]}, {"n": "5.29", "name": "La atención domiciliaria", "r": [174, 34, 4, 3, 2, 5], "s": [0.838, 0.55, 0.65, 0.67, 0.67, 0.635]}, {"n": "3.27", "name": "La protección frente a extorsión digital", "r": [175, 35, 14, 11, 45, 74], "s": [0.838, 0.55, 0.59, 0.647, 0.582, 0.56]}, {"n": "7.9", "name": "La academia de altas capacidades", "r": [180, 59, 16, 8, 9, 22], "s": [0.833, 0.514, 0.588, 0.657, 0.622, 0.6]}, {"n": "5.5", "name": "La rehabilitación intensiva", "r": [185, 60, 28, 25, 18, 91], "s": [0.833, 0.514, 0.568, 0.609, 0.609, 0.543]}, {"n": "7.47", "name": "La plataforma de conocimiento experto", "r": [193, 31, 13, 15, 19, 6], "s": [0.829, 0.554, 0.592, 0.636, 0.609, 0.623]}, {"n": "5.46", "name": "La comunidad de pacientes premium", "r": [216, 48, 46, 31, 25, 3], "s": [0.818, 0.527, 0.536, 0.603, 0.603, 0.648]}, {"n": "1.23", "name": "El matchmaking de lujo", "r": [220, 49, 24, 7, 14, 20], "s": [0.818, 0.527, 0.576, 0.658, 0.613, 0.605]}, {"n": "3.24", "name": "La protección de reputación", "r": [231, 123, 34, 24, 16, 10], "s": [0.811, 0.459, 0.555, 0.61, 0.61, 0.617]}, {"n": "3.21", "name": "La ciberseguridad para millonarios", "r": [232, 87, 27, 16, 11, 16], "s": [0.811, 0.484, 0.57, 0.635, 0.618, 0.612]}, {"n": "4.35", "name": "La franquicia de bajo coste", "r": [233, 69, 54, 26, 20, 17], "s": [0.81, 0.506, 0.524, 0.607, 0.607, 0.611]}, {"n": "7.26", "name": "El círculo de inversores intelectuales", "r": [246, 125, 64, 18, 72, 30], "s": [0.8, 0.458, 0.515, 0.622, 0.557, 0.592]}, {"n": "4.20", "name": "Los clubes privados de inversión", "r": [260, 161, 99, 38, 33, 7], "s": [0.795, 0.42, 0.492, 0.594, 0.594, 0.622]}, {"n": "5.39", "name": "El diagnóstico de enfermedades difíciles", "r": [271, 43, 43, 12, 36, 69], "s": [0.789, 0.532, 0.539, 0.647, 0.587, 0.561]}, {"n": "5.14", "name": "El acceso a ensayos clínicos", "r": [272, 44, 10, 6, 8, 8], "s": [0.789, 0.532, 0.599, 0.66, 0.622, 0.621]}, {"n": "3.50", "name": "El asesor de riesgos personales", "r": [274, 45, 11, 1, 1, 2], "s": [0.789, 0.532, 0.599, 0.72, 0.682, 0.656]}, {"n": "3.45", "name": "El servicio médico concierge", "r": [276, 67, 20, 4, 7, 29], "s": [0.789, 0.507, 0.584, 0.665, 0.627, 0.594]}, {"n": "3.31", "name": "La planificación fiscal internacional", "r": [279, 207, 49, 20, 90, 106], "s": [0.789, 0.382, 0.529, 0.617, 0.532, 0.536]}, {"n": "3.6", "name": "La planificación sucesoria", "r": [289, 177, 84, 22, 13, 21], "s": [0.778, 0.404, 0.502, 0.614, 0.614, 0.601]}, {"n": "5.23", "name": "La plataforma de enfermedades crónicas", "r": [295, 134, 38, 36, 31, 13], "s": [0.756, 0.45, 0.55, 0.595, 0.595, 0.615]}];
+const COLS=[
+ {k:'1 componente',t:'Encaje contigo',w:'100% encaje'},
+ {k:'2 componentes',t:'+ Valor futuro 2031',w:'Encaje 50 · futuro 50'},
+ {k:'3 componentes',t:'+ Demanda monetizable',w:'Encaje 30 · futuro 30 · demanda 40'},
+ {k:'4 componentes',t:'+ Estructura competitiva',w:'Encaje 15 · futuro 30 · demanda 35 · competencia 20'},
+ {k:'4 componentes · revisado',t:'Con datos del agente 1',w:'Mismos pesos; demanda y competencia del top 20 corregidas con fuentes'},
+ {k:'5 componentes',t:'+ Economía y escalabilidad',w:'Encaje 10 · futuro 25 · demanda 30 · competencia 15 · economía 20'}];
+const IND={'1':'Deseo · Sell men lust','2':'Belleza · Sell women beauty','3':'Seguridad · Sell the rich security','4':'Esperanza · Sell the poor hope','5':'Salud · Sell the sick health','6':'Miedo · Sell the healthy fear','7':'Estatus intelectual · Sell the intelligent status','8':'Pertenencia · Sell the lonely belonging'};
+let N=20, sel=null;
+try{const s=localStorage.getItem('topN'); if(s==='15'||s==='20') N=+s;}catch(e){}
+const board=document.getElementById('board');
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function render(){
+  document.getElementById('t15').setAttribute('aria-pressed',N===15);
+  document.getElementById('t20').setAttribute('aria-pressed',N===20);
+  board.innerHTML='';
+  const seen=new Set(); const firstIn={};
+  COLS.forEach((c,ci)=>{
+    DATA.forEach(d=>{ if(d.r[ci]<=N && firstIn[d.n]===undefined) firstIn[d.n]=ci; });
+    const inTop=DATA.filter(d=>d.r[ci]<=N).sort((a,b)=>a.r[ci]-b.r[ci]);
+    const dropped=DATA.filter(d=>d.r[ci]>N && firstIn[d.n]!==undefined && firstIn[d.n]<ci).sort((a,b)=>a.r[ci]-b.r[ci]);
+    const col=document.createElement('section'); col.className='col';
+    col.innerHTML=`<div class="colhead"><span class="k">${c.k}</span><span class="t">${c.t}</span><span class="w">${c.w}</span></div>`;
+    const row=(d,out)=>{
+      let mv='';
+      if(ci>0){
+        if(!out && firstIn[d.n]===ci) mv='<span class="mv new">NUEVO</span>';
+        else { const dlt=d.r[ci-1]-d.r[ci]; mv= dlt>0?`<span class="mv up">▲${dlt}</span>`: dlt<0?`<span class="mv down">▼${-dlt}</span>`:'<span class="mv eq">=</span>'; }
+      }
+      const el=document.createElement('div'); el.className='row'+(out?' out':'')+(d.r.every(x=>x<=N)?' always':'')+(d.r.filter(x=>x<=N).length===COLS.length-1?' three':''); el.tabIndex=0; el.dataset.n=d.n;
+      el.setAttribute('role','button'); el.setAttribute('aria-label',`${d.name}, puesto ${d.r[ci]}`);
+      el.innerHTML=`<span class="rk">${d.r[ci]}</span><span class="nm"><span>${esc(d.name)}</span><small><span class="dot" style="background:var(--i${d.n.split('.')[0]})"></span>${d.n} · ${Math.round(d.s[ci]*100)}%</small></span>${mv}`;
+      return el;
+    };
+    inTop.forEach(d=>col.appendChild(row(d,false)));
+    if(dropped.length){ const dv=document.createElement('div'); dv.className='divider'; dv.textContent=`Fuera del top ${N} (${dropped.length})`; col.appendChild(dv); dropped.forEach(d=>col.appendChild(row(d,true))); }
+    board.appendChild(col);
+  });
+  applySel(); stats(firstIn); mix();
+}
+function mix(){
+  const max=N;
+  let h=`<tr><th>Industria (top ${N})</th>${COLS.map(c=>`<th>${c.k}</th>`).join('')}</tr>`;
+  Object.entries(IND).forEach(([k,v])=>{
+    const cnt=COLS.map((c,ci)=>DATA.filter(d=>d.n.split('.')[0]===k&&d.r[ci]<=N).length);
+    h+=`<tr><td><span class="dot" style="background:var(--i${k})"></span> ${k}. ${esc(v)}</td>`+cnt.map(n=>n?`<td><b style="background:color-mix(in srgb, var(--i${k}) ${Math.round(12+60*n/max)}%, transparent)">${n}</b></td>`:'<td class="z">0</td>').join('')+'</tr>';
+  });
+  document.getElementById('mix').innerHTML=h;
+}
+function applySel(){
+  board.classList.toggle('focus',!!sel);
+  board.querySelectorAll('.row').forEach(r=>r.classList.toggle('hl',r.dataset.n===sel));
+}
+function stats(firstIn){
+  const all=DATA.filter(d=>d.r.every(x=>x<=N));
+  const last=DATA.filter(d=>d.r[5]<=N && firstIn[d.n]===5);
+  const ever=Object.keys(firstIn).length;
+  const lost=DATA.filter(d=>d.r[5]>N && firstIn[d.n]!==undefined);
+  document.getElementById('stats').innerHTML=
+   `<div class="stat"><b>${ever}</b><small>modelos han estado alguna vez en el top ${N}</small></div>`+
+   `<div class="stat"><b>${all.length}</b><small>en el top ${N} en todas las columnas${all.length?': '+all.map(d=>esc(d.name.replace(/^(El|La|Los|Las) /,''))).join(', '):''}</small></div>`+
+   `<div class="stat"><b>${last.length}</b><small>entran por primera vez con la economía y escalabilidad</small></div>`+
+   `<div class="stat"><b>${lost.length}</b><small>estuvieron en el top ${N} y hoy están fuera</small></div>`;
+}
+board.addEventListener('click',e=>{const r=e.target.closest('.row'); if(!r) return; sel= sel===r.dataset.n?null:r.dataset.n; applySel();});
+board.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('row')){e.preventDefault(); e.target.click();}});
+function setN(n){N=n; try{localStorage.setItem('topN',String(n))}catch(e){} render();}
+document.getElementById('t15').onclick=()=>setN(15);
+document.getElementById('t20').onclick=()=>setN(20);
+document.getElementById('inds').innerHTML=Object.entries(IND).map(([k,v])=>`<span><span class="dot" style="background:var(--i${k})"></span>${k}. ${v}</span>`).join('');
+render();
+</script>
+
+</body></html>
